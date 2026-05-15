@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>壁纸详情 - 壁纸画廊</title>
 
   <!-- 字体 -->
   <link href="https://lf-code-agent.coze.cn/obj/x-ai-cn/fonts/google/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -73,211 +74,270 @@
 <body class="bg-background text-on-surface font-sans">
 
   <!-- @nav:start 导航组件 -->
-  <header class="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-outline/30">
+  <header id="navbar" class="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-outline/20 transition-all duration-300">
     <div class="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
-      <a href="home.html" class="flex items-center gap-2">
+      <!-- Logo -->
+      <a href="home.html" class="flex items-center gap-2.5">
         <i data-lucide="image" class="w-6 h-6 text-primary"></i>
         <span class="font-semibold text-lg text-on-surface">壁纸画廊</span>
       </a>
-      <nav class="flex items-center gap-6">
-        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">发现壁纸</a>
-        <a href="favorites.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">我的收藏</a>
+      
+      <!-- 中间导航 -->
+      <nav class="hidden md:flex items-center gap-8">
+        <a href="home.html" class="text-sm font-medium text-on-surface hover:text-primary transition-colors" aria-current="page">热门</a>
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">最新</a>
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">动漫</a>
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">风景</a>
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">治愈系</a>
       </nav>
+      
+      <!-- 右侧操作 -->
+      <div class="flex items-center gap-3">
+        <button id="search-btn" class="p-2 rounded-full hover:bg-surface-container transition-colors" title="搜索">
+          <i data-lucide="search" class="w-5 h-5 text-on-surface-variant"></i>
+        </button>
+        <button id="theme-toggle" class="p-2 rounded-full hover:bg-surface-container transition-colors" title="切换主题">
+          <i data-lucide="moon" class="w-5 h-5 text-on-surface-variant"></i>
+        </button>
+        <a href="favorites.html" class="p-2 rounded-full hover:bg-surface-container transition-colors" title="我的收藏">
+          <i data-lucide="heart" class="w-5 h-5 text-on-surface-variant"></i>
+        </a>
+      </div>
     </div>
   </header>
   <!-- @nav:end 导航组件 -->
 
-  <main class="max-w-7xl mx-auto">
-    <!-- @main-content:start -->
-    <div class="px-6 py-8">
-      <!-- 返回按钮 -->
-      <button id="btn-back" class="inline-flex items-center gap-2 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors mb-6">
-        <i data-lucide="arrow-left" class="w-4 h-4"></i>
-        返回首页
+  <!-- @main-content:start -->
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <!-- 返回按钮 -->
+    <div class="mb-6">
+      <button id="btn-back" class="inline-flex items-center gap-2 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors group">
+        <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform"></i>
+        <span>返回首页</span>
       </button>
+    </div>
 
-      <!-- 主内容区：大图 + 信息 -->
-      <div class="grid lg:grid-cols-[1fr_320px] gap-8">
-        <!-- 大图展示区 -->
-        <div class="bg-surface rounded-xl shadow-card overflow-hidden">
+    <!-- 主内容区：大图 + 信息面板 -->
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- 左侧：大图展示区 -->
+      <div class="flex-1 flex items-start justify-center">
+        <div class="relative w-full max-w-4xl">
           <img 
+            id="wallpaper-image"
             src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=90" 
-            alt="雪山日出风景壁纸" 
+            alt="雪山星空夜景壁纸" 
             data-category="自然风景"
-            class="w-full h-auto object-cover"
+            class="w-full h-auto rounded-2xl shadow-float"
           />
-        </div>
-
-        <!-- 右侧信息面板 -->
-        <div class="space-y-6">
-          <!-- 壁纸信息 -->
-          <div class="bg-surface rounded-xl shadow-card p-5">
-            <h1 class="text-xl font-bold text-on-surface mb-3">雪山日出</h1>
-            
-            <!-- 分类标签 -->
-            <div class="flex items-center gap-2 mb-4">
-              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">自然风景</span>
-              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-surface-container text-on-surface-variant">山川</span>
-            </div>
-
-            <!-- 分辨率信息 -->
-            <div class="flex items-center gap-2 text-sm text-on-surface-variant">
-              <i data-lucide="maximize" class="w-4 h-4"></i>
-              <span>1920 × 1080</span>
-            </div>
-          </div>
-
-          <!-- 操作按钮区 -->
-          <div class="bg-surface rounded-xl shadow-card p-5 space-y-3">
-            <!-- 收藏按钮 -->
-            <button id="btn-favorite" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium border border-outline-variant/30 hover:bg-surface-container transition-colors">
-              <i data-lucide="heart" class="w-4 h-4"></i>
-              <span>收藏壁纸</span>
-            </button>
-
-            <!-- 下载原图按钮 -->
-            <button id="btn-download" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-primary text-on-primary hover:opacity-90 active:scale-[0.98] transition-all">
-              <i data-lucide="download" class="w-4 h-4"></i>
-              <span>下载原图</span>
-            </button>
-          </div>
+          <!-- 图片加载提示（可选优化） -->
         </div>
       </div>
 
-      <!-- 相关推荐 -->
-      <div class="mt-12">
-        <h2 class="text-lg font-semibold text-on-surface mb-4">相关推荐</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <!-- 推荐壁纸 1 -->
-          <a href="wallpaper.html?id=2" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
-            <div class="aspect-[4/3] overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1464822759023-4681f960a41f?w=400&q=80" 
-                alt="森林晨雾" 
-                data-category="自然风景"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-            <div class="p-3">
-              <p class="text-sm font-medium text-on-surface truncate">森林晨雾</p>
-            </div>
-          </a>
+      <!-- 右侧：信息面板 -->
+      <div class="w-full lg:w-80 shrink-0 space-y-6">
+        <!-- 壁纸名称 -->
+        <div>
+          <h1 id="wallpaper-title" class="text-xl font-bold text-on-surface">雪山星空夜景</h1>
+        </div>
 
-          <!-- 推荐壁纸 2 -->
-          <a href="wallpaper.html?id=3" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
-            <div class="aspect-[4/3] overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1507003217269-30a1f1e8dbd1?w=400&q=80" 
-                alt="日落海滩" 
-                data-category="自然风景"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-            <div class="p-3">
-              <p class="text-sm font-medium text-on-surface truncate">日落海滩</p>
-            </div>
-          </a>
+        <!-- 分类标签 -->
+        <div>
+          <div class="text-xs font-medium text-on-surface-variant uppercase tracking-wide mb-2">分类</div>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
+            自然风景
+          </span>
+        </div>
 
-          <!-- 推荐壁纸 3 -->
-          <a href="wallpaper.html?id=4" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
-            <div class="aspect-[4/3] overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1519681393784-5b9a8a6b2b14?w=400&q=80" 
-                alt="星空银河" 
-                data-category="自然风景"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-            <div class="p-3">
-              <p class="text-sm font-medium text-on-surface truncate">星空银河</p>
-            </div>
-          </a>
+        <!-- 标签列表 -->
+        <div>
+          <div class="text-xs font-medium text-on-surface-variant uppercase tracking-wide mb-2">标签</div>
+          <div class="flex flex-wrap gap-2">
+            <!-- 标签1 -->
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-surface-container text-on-surface-variant">星空</span>
+            <!-- 标签2 -->
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-surface-container text-on-surface-variant">雪山</span>
+            <!-- 标签3 -->
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-surface-container text-on-surface-variant">夜景</span>
+            <!-- 标签4 -->
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-surface-container text-on-surface-variant">银河</span>
+            <!-- 标签5 -->
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-surface-container text-on-surface-variant">治愈系</span>
+          </div>
+        </div>
 
-          <!-- 推荐壁纸 4 -->
-          <a href="wallpaper.html?id=5" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
-            <div class="aspect-[4/3] overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1433086966351-6bc5f06c688a?w=400&q=80" 
-                alt="山间瀑布" 
-                data-category="自然风景"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-            <div class="p-3">
-              <p class="text-sm font-medium text-on-surface truncate">山间瀑布</p>
-            </div>
-          </a>
+        <!-- 分辨率信息 -->
+        <div>
+          <div class="text-xs font-medium text-on-surface-variant uppercase tracking-wide mb-2">分辨率</div>
+          <div class="flex items-center gap-2 text-sm text-on-surface">
+            <i data-lucide="maximize" class="w-4 h-4 text-on-surface-variant"></i>
+            <span id="wallpaper-resolution">4928 × 3264</span>
+          </div>
+        </div>
 
-          <!-- 推荐壁纸 5 -->
-          <a href="wallpaper.html?id=6" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
-            <div class="aspect-[4/3] overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1470072981899-440fd6f75f0d?w=400&q=80" 
-                alt="草原日落" 
-                data-category="自然风景"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-            <div class="p-3">
-              <p class="text-sm font-medium text-on-surface truncate">草原日落</p>
-            </div>
-          </a>
+        <!-- 来源 -->
+        <div>
+          <div class="text-xs font-medium text-on-surface-variant uppercase tracking-wide mb-2">来源</div>
+          <div class="flex items-center gap-2 text-sm text-on-surface-variant">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+            <span>Unsplash</span>
+          </div>
+        </div>
+
+        <!-- 分隔线 -->
+        <div class="border-t border-outline/30"></div>
+
+        <!-- 操作按钮区 -->
+        <div class="space-y-3">
+          <!-- 收藏按钮 -->
+          <button id="btn-favorite" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border border-outline/30 hover:border-outline/60 hover:bg-surface-container transition-all">
+            <i data-lucide="heart" class="w-5 h-5"></i>
+            <span id="favorite-text">添加收藏</span>
+          </button>
+          
+          <!-- 下载原图按钮 -->
+          <button id="btn-download" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium bg-primary text-on-primary hover:opacity-90 active:scale-[0.98] transition-all shadow-card">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span>下载原图</span>
+          </button>
         </div>
       </div>
     </div>
-    <!-- @main-content:end -->
+
+    <!-- 分隔线 -->
+    <div class="my-12 border-t border-outline/20"></div>
+
+    <!-- 相似推荐 -->
+    <section>
+      <h2 class="text-lg font-semibold text-on-surface mb-6">相似壁纸</h2>
+      <div id="similar-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        
+        <!-- 相似壁纸1 -->
+        <a href="wallpaper.html?id=2" class="group block">
+          <div class="relative aspect-[3/2] overflow-hidden rounded-lg bg-surface-container">
+            <img 
+              src="https://images.unsplash.com/photo-1419242426488-d7d5f6f6f6f6?w=400&q=80" 
+              alt="星空银河" 
+              data-category="自然风景"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </a>
+
+        <!-- 相似壁纸2 -->
+        <a href="wallpaper.html?id=3" class="group block">
+          <div class="relative aspect-[3/2] overflow-hidden rounded-lg bg-surface-container">
+            <img 
+              src="https://images.unsplash.com/photo-1464809375023-be5f84c29678?w=400&q=80" 
+              alt="雪山日出" 
+              data-category="自然风景"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </a>
+
+        <!-- 相似壁纸3 -->
+        <a href="wallpaper.html?id=4" class="group block">
+          <div class="relative aspect-[3/2] overflow-hidden rounded-lg bg-surface-container">
+            <img 
+              src="https://images.unsplash.com/photo-1509310020374-e3d2f7a1f6c6?w=400&q=80" 
+              alt="极光夜景" 
+              data-category="自然风景"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </a>
+
+        <!-- 相似壁纸4 -->
+        <a href="wallpaper.html?id=5" class="group block">
+          <div class="relative aspect-[3/2] overflow-hidden rounded-lg bg-surface-container">
+            <img 
+              src="https://images.unsplash.com/photo-1519681392205-9c7b7a8d5b63?w=400&q=80" 
+              alt="雪山云海" 
+              data-category="自然风景"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </a>
+
+        <!-- 相似壁纸5 -->
+        <a href="wallpaper.html?id=6" class="group block">
+          <div class="relative aspect-[3/2] overflow-hidden rounded-lg bg-surface-container">
+            <img 
+              src="https://images.unsplash.com/photo-1464823065480-47f6e523c549?w=400&q=80" 
+              alt="夜空繁星" 
+              data-category="自然风景"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </a>
+
+        <!-- 相似壁纸6 -->
+        <a href="wallpaper.html?id=7" class="group block">
+          <div class="relative aspect-[3/2] overflow-hidden rounded-lg bg-surface-container">
+            <img 
+              src="https://images.unsplash.com/photo-1451187582092-0f1f6f6f6f6f?w=400&q=80" 
+              alt="星空倒影" 
+              data-category="自然风景"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- 底部留白 -->
+    <div class="h-12"></div>
   </main>
+  <!-- @main-content:end -->
 
   <script>
     lucide.createIcons();
 
     $(function() {
+      // 收藏状态（模拟）
+      let isFavorited = false;
+
       // 返回按钮 - 点击返回首页
       $('#btn-back').on('click', function() {
         window.location.href = 'home.html';
       });
 
-      // 收藏按钮 - 点击切换收藏状态
-      // 完整交互逻辑：
-      // 1. 点击后切换收藏状态（收藏/取消收藏）
-      // 2. 更新按钮样式和文字（心形图标填充/线框，文字变为"已收藏"/"收藏壁纸"）
-      // 3. 将壁纸ID存入/移出 localStorage 的收藏列表
-      // 4. 显示 Toast 提示操作结果
+      // 收藏按钮 - 切换收藏状态
       $('#btn-favorite').on('click', function() {
-        var $btn = $(this);
-        var $icon = $btn.find('[data-lucide="heart"]');
-        var $text = $btn.find('span');
+        isFavorited = !isFavorited;
+        const $btn = $(this);
+        const $text = $('#favorite-text');
+        const $icon = $btn.find('i');
         
-        if ($btn.hasClass('favorited')) {
-          // 取消收藏
-          $btn.removeClass('favorited bg-error/10 text-error border-error/30');
-          $btn.addClass('border-outline-variant/30');
-          $icon.attr('data-lucide', 'heart');
-          $text.text('收藏壁纸');
-          console.log('已取消收藏');
+        if (isFavorited) {
+          $btn.addClass('border-error/30 bg-error/5');
+          $btn.removeClass('border-outline/30');
+          $icon.attr('data-lucide', 'heart').addClass('text-error fill-error');
+          $text.text('已收藏').addClass('text-error');
+          lucide.createIcons();
         } else {
-          // 添加收藏
-          $btn.addClass('favorited bg-error/10 text-error border-error/30');
-          $btn.removeClass('border-outline-variant/30');
-          $icon.attr('data-lucide', 'heart');
-          $text.text('已收藏');
-          console.log('已添加收藏');
+          $btn.removeClass('border-error/30 bg-error/5');
+          $btn.addClass('border-outline/30');
+          $icon.attr('data-lucide', 'heart').removeClass('text-error fill-error');
+          $text.text('添加收藏').removeClass('text-error');
+          lucide.createIcons();
         }
-        
-        // 重新渲染图标
-        lucide.createIcons();
       });
 
-      // 下载按钮 - 点击下载原图
-      // 完整交互逻辑：
-      // 1. 获取当前壁纸的原图 URL
-      // 2. 创建 a 标签触发下载，设置 download 属性为壁纸名称
-      // 3. 显示下载中状态，下载完成后恢复按钮状态
+      // 下载按钮 - 触发图片下载
       $('#btn-download').on('click', function() {
-        console.log('开始下载壁纸原图');
-        // 模拟下载提示
-        alert('壁纸下载已开始，请查看浏览器下载列表');
+        const imgUrl = $('#wallpaper-image').attr('src');
+        const link = document.createElement('a');
+        link.href = imgUrl;
+        link.download = 'wallpaper.jpg';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       });
+
+      // 相似壁纸点击 - 跳转到详情页（已通过 href 实现）
     });
   </script>
 </body>

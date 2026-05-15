@@ -73,16 +73,35 @@
 <body class="bg-background text-on-surface font-sans">
 
   <!-- @nav:start 导航组件 -->
-  <header class="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-outline/30">
+  <header id="navbar" class="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-outline/20 transition-all duration-300">
     <div class="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
-      <a href="home.html" class="flex items-center gap-2">
+      <!-- Logo -->
+      <a href="home.html" class="flex items-center gap-2.5">
         <i data-lucide="image" class="w-6 h-6 text-primary"></i>
         <span class="font-semibold text-lg text-on-surface">壁纸画廊</span>
       </a>
-      <nav class="flex items-center gap-6">
-        <a href="home.html" class="text-sm font-medium text-on-surface hover:text-primary transition-colors" aria-current="page">发现壁纸</a>
-        <a href="favorites.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">我的收藏</a>
+      
+      <!-- 中间导航 -->
+      <nav class="hidden md:flex items-center gap-8">
+        <a href="home.html" class="text-sm font-medium text-on-surface hover:text-primary transition-colors" aria-current="page">热门</a>
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">最新</a>
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">动漫</a>
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">风景</a>
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">治愈系</a>
       </nav>
+      
+      <!-- 右侧操作 -->
+      <div class="flex items-center gap-3">
+        <button id="search-btn" class="p-2 rounded-full hover:bg-surface-container transition-colors" title="搜索">
+          <i data-lucide="search" class="w-5 h-5 text-on-surface-variant"></i>
+        </button>
+        <button id="theme-toggle" class="p-2 rounded-full hover:bg-surface-container transition-colors" title="切换主题">
+          <i data-lucide="moon" class="w-5 h-5 text-on-surface-variant"></i>
+        </button>
+        <a href="favorites.html" class="p-2 rounded-full hover:bg-surface-container transition-colors" title="我的收藏">
+          <i data-lucide="heart" class="w-5 h-5 text-on-surface-variant"></i>
+        </a>
+      </div>
     </div>
   </header>
   <!-- @nav:end 导航组件 -->
