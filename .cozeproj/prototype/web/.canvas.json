@@ -1,0 +1,28 @@
+{
+  "elements": [
+    {
+      "type": "html",
+      "options": {
+        "path": ".cozeproj/prototype/web/home.html"
+      },
+      "title": "首页",
+      "size": "web"
+    },
+    {
+      "type": "html",
+      "options": {
+        "path": ".cozeproj/prototype/web/wallpaper.html"
+      },
+      "title": "壁纸详情",
+      "size": "web"
+    },
+    {
+      "type": "html",
+      "options": {
+        "path": ".cozeproj/prototype/web/favorites.html"
+      },
+      "title": "我的收藏",
+      "size": "web"
+    }
+  ]
+}

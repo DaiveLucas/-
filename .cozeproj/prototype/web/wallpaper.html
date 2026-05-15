@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- 字体 -->
+  <link href="https://lf-code-agent.coze.cn/obj/x-ai-cn/fonts/google/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* === 品牌色 === */
+      --color-primary:              #1A1A1A;
+      --color-primary-container:    #2A2A2A;
+      --color-on-primary:           #FFFFFF;
+      /* === 背景 / 表面 === */
+      --color-background:                 #FAFAF7;
+      --color-surface-container-lowest:   #FFFFFF;
+      --color-surface:                    #FFFFFF;
+      --color-surface-container:          #F5F5F0;
+      --color-surface-container-high:     #EBEBE5;
+      --color-surface-container-highest:  #E0E0D8;
+      /* === 文字 === */
+      --color-on-surface:           #151515;
+      --color-on-surface-variant:   #77736B;
+      /* === 功能色 === */
+      --color-success:  #22c55e;
+      --color-error:    #ef4444;
+      --color-warning:  #f59e0b;
+      /* === 边框 === */
+      --color-outline:          #E6E2DA;
+      --color-outline-variant:  #D4D0C8;
+      /* === 圆角 === */
+      --radius-sm:   0.25rem;
+      --radius-md:   0.375rem;
+      --radius-lg:   0.5rem;
+      --radius-xl:   0.75rem;
+      --radius-2xl:  1rem;
+      --radius-full: 9999px;
+      /* === 阴影 === */
+      --shadow-card:   0 2px 8px rgba(0,0,0,0.06);
+      --shadow-float:  0 10px 25px rgba(0,0,0,0.08);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.12);
+      /* === 字体 === */
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+  </style>
+
+  <!-- 图片兜底 -->
+  <script>
+    document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (img.tagName !== 'IMG' || img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cat = img.getAttribute('data-category') || '其他';
+      const alt = img.getAttribute('alt') || '';
+      const label = esc(alt.length > 8 ? alt.slice(0, 8) + '…' : alt);
+      const icons = { '人物': '👤', '自然风景': '🏞', '动物': '🐾', '建筑城市': '🏙', '运动体育': '⚽', '交通工具': '🚗', '食物': '🍽', '服饰时尚': '👗', '商业科技': '💼', '游戏娱乐': '🎮', '艺术': '🎨', '其他': '🖼' };
+      const icon = icons[cat] || '🖼';
+      const w = img.width || 400, h = img.height || 300;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="45%" text-anchor="middle" font-size="${Math.min(w, h) * 0.18}" dominant-baseline="central">${icon}</text><text x="50%" y="68%" text-anchor="middle" font-size="${Math.min(w, h) * 0.07}" fill="%239ca3af" font-family="system-ui,sans-serif" dominant-baseline="central">${label}</text></svg>`;
+      img.src = 'data:image/svg+xml,' + svg;
+    }, true);
+  </script>
+</head>
+
+<body class="bg-background text-on-surface font-sans">
+
+  <!-- @nav:start 导航组件 -->
+  <header class="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-outline/30">
+    <div class="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
+      <a href="home.html" class="flex items-center gap-2">
+        <i data-lucide="image" class="w-6 h-6 text-primary"></i>
+        <span class="font-semibold text-lg text-on-surface">壁纸画廊</span>
+      </a>
+      <nav class="flex items-center gap-6">
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">发现壁纸</a>
+        <a href="favorites.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">我的收藏</a>
+      </nav>
+    </div>
+  </header>
+  <!-- @nav:end 导航组件 -->
+
+  <main class="max-w-7xl mx-auto">
+    <!-- @main-content:start -->
+    <div class="px-6 py-8">
+      <!-- 返回按钮 -->
+      <button id="btn-back" class="inline-flex items-center gap-2 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors mb-6">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        返回首页
+      </button>
+
+      <!-- 主内容区：大图 + 信息 -->
+      <div class="grid lg:grid-cols-[1fr_320px] gap-8">
+        <!-- 大图展示区 -->
+        <div class="bg-surface rounded-xl shadow-card overflow-hidden">
+          <img 
+            src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=90" 
+            alt="雪山日出风景壁纸" 
+            data-category="自然风景"
+            class="w-full h-auto object-cover"
+          />
+        </div>
+
+        <!-- 右侧信息面板 -->
+        <div class="space-y-6">
+          <!-- 壁纸信息 -->
+          <div class="bg-surface rounded-xl shadow-card p-5">
+            <h1 class="text-xl font-bold text-on-surface mb-3">雪山日出</h1>
+            
+            <!-- 分类标签 -->
+            <div class="flex items-center gap-2 mb-4">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">自然风景</span>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-surface-container text-on-surface-variant">山川</span>
+            </div>
+
+            <!-- 分辨率信息 -->
+            <div class="flex items-center gap-2 text-sm text-on-surface-variant">
+              <i data-lucide="maximize" class="w-4 h-4"></i>
+              <span>1920 × 1080</span>
+            </div>
+          </div>
+
+          <!-- 操作按钮区 -->
+          <div class="bg-surface rounded-xl shadow-card p-5 space-y-3">
+            <!-- 收藏按钮 -->
+            <button id="btn-favorite" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium border border-outline-variant/30 hover:bg-surface-container transition-colors">
+              <i data-lucide="heart" class="w-4 h-4"></i>
+              <span>收藏壁纸</span>
+            </button>
+
+            <!-- 下载原图按钮 -->
+            <button id="btn-download" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-primary text-on-primary hover:opacity-90 active:scale-[0.98] transition-all">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>下载原图</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 相关推荐 -->
+      <div class="mt-12">
+        <h2 class="text-lg font-semibold text-on-surface mb-4">相关推荐</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <!-- 推荐壁纸 1 -->
+          <a href="wallpaper.html?id=2" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
+            <div class="aspect-[4/3] overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1464822759023-4681f960a41f?w=400&q=80" 
+                alt="森林晨雾" 
+                data-category="自然风景"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div class="p-3">
+              <p class="text-sm font-medium text-on-surface truncate">森林晨雾</p>
+            </div>
+          </a>
+
+          <!-- 推荐壁纸 2 -->
+          <a href="wallpaper.html?id=3" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
+            <div class="aspect-[4/3] overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1507003217269-30a1f1e8dbd1?w=400&q=80" 
+                alt="日落海滩" 
+                data-category="自然风景"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div class="p-3">
+              <p class="text-sm font-medium text-on-surface truncate">日落海滩</p>
+            </div>
+          </a>
+
+          <!-- 推荐壁纸 3 -->
+          <a href="wallpaper.html?id=4" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
+            <div class="aspect-[4/3] overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1519681393784-5b9a8a6b2b14?w=400&q=80" 
+                alt="星空银河" 
+                data-category="自然风景"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div class="p-3">
+              <p class="text-sm font-medium text-on-surface truncate">星空银河</p>
+            </div>
+          </a>
+
+          <!-- 推荐壁纸 4 -->
+          <a href="wallpaper.html?id=5" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
+            <div class="aspect-[4/3] overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1433086966351-6bc5f06c688a?w=400&q=80" 
+                alt="山间瀑布" 
+                data-category="自然风景"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div class="p-3">
+              <p class="text-sm font-medium text-on-surface truncate">山间瀑布</p>
+            </div>
+          </a>
+
+          <!-- 推荐壁纸 5 -->
+          <a href="wallpaper.html?id=6" class="group block bg-surface rounded-lg shadow-card overflow-hidden hover:shadow-float transition-shadow">
+            <div class="aspect-[4/3] overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1470072981899-440fd6f75f0d?w=400&q=80" 
+                alt="草原日落" 
+                data-category="自然风景"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div class="p-3">
+              <p class="text-sm font-medium text-on-surface truncate">草原日落</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- @main-content:end -->
+  </main>
+
+  <script>
+    lucide.createIcons();
+
+    $(function() {
+      // 返回按钮 - 点击返回首页
+      $('#btn-back').on('click', function() {
+        window.location.href = 'home.html';
+      });
+
+      // 收藏按钮 - 点击切换收藏状态
+      // 完整交互逻辑：
+      // 1. 点击后切换收藏状态（收藏/取消收藏）
+      // 2. 更新按钮样式和文字（心形图标填充/线框，文字变为"已收藏"/"收藏壁纸"）
+      // 3. 将壁纸ID存入/移出 localStorage 的收藏列表
+      // 4. 显示 Toast 提示操作结果
+      $('#btn-favorite').on('click', function() {
+        var $btn = $(this);
+        var $icon = $btn.find('[data-lucide="heart"]');
+        var $text = $btn.find('span');
+        
+        if ($btn.hasClass('favorited')) {
+          // 取消收藏
+          $btn.removeClass('favorited bg-error/10 text-error border-error/30');
+          $btn.addClass('border-outline-variant/30');
+          $icon.attr('data-lucide', 'heart');
+          $text.text('收藏壁纸');
+          console.log('已取消收藏');
+        } else {
+          // 添加收藏
+          $btn.addClass('favorited bg-error/10 text-error border-error/30');
+          $btn.removeClass('border-outline-variant/30');
+          $icon.attr('data-lucide', 'heart');
+          $text.text('已收藏');
+          console.log('已添加收藏');
+        }
+        
+        // 重新渲染图标
+        lucide.createIcons();
+      });
+
+      // 下载按钮 - 点击下载原图
+      // 完整交互逻辑：
+      // 1. 获取当前壁纸的原图 URL
+      // 2. 创建 a 标签触发下载，设置 download 属性为壁纸名称
+      // 3. 显示下载中状态，下载完成后恢复按钮状态
+      $('#btn-download').on('click', function() {
+        console.log('开始下载壁纸原图');
+        // 模拟下载提示
+        alert('壁纸下载已开始，请查看浏览器下载列表');
+      });
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- 字体 -->
+  <link href="https://lf-code-agent.coze.cn/obj/x-ai-cn/fonts/google/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* === 品牌色 === */
+      --color-primary:              #1A1A1A;
+      --color-primary-container:    #2A2A2A;
+      --color-on-primary:           #FFFFFF;
+      /* === 背景 / 表面 === */
+      --color-background:                 #FAFAF7;
+      --color-surface-container-lowest:   #FFFFFF;
+      --color-surface:                    #FFFFFF;
+      --color-surface-container:          #F5F5F0;
+      --color-surface-container-high:     #EBEBE5;
+      --color-surface-container-highest:  #E0E0D8;
+      /* === 文字 === */
+      --color-on-surface:           #151515;
+      --color-on-surface-variant:   #77736B;
+      /* === 功能色 === */
+      --color-success:  #22c55e;
+      --color-error:    #ef4444;
+      --color-warning:  #f59e0b;
+      /* === 边框 === */
+      --color-outline:          #E6E2DA;
+      --color-outline-variant:  #D4D0C8;
+      /* === 圆角 === */
+      --radius-sm:   0.25rem;
+      --radius-md:   0.375rem;
+      --radius-lg:   0.5rem;
+      --radius-xl:   0.75rem;
+      --radius-2xl:  1rem;
+      --radius-full: 9999px;
+      /* === 阴影 === */
+      --shadow-card:   0 2px 8px rgba(0,0,0,0.06);
+      --shadow-float:  0 10px 25px rgba(0,0,0,0.08);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.12);
+      /* === 字体 === */
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+  </style>
+
+  <!-- 图片兜底 -->
+  <script>
+    document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (img.tagName !== 'IMG' || img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cat = img.getAttribute('data-category') || '其他';
+      const alt = img.getAttribute('alt') || '';
+      const label = esc(alt.length > 8 ? alt.slice(0, 8) + '…' : alt);
+      const icons = { '人物': '👤', '自然风景': '🏞', '动物': '🐾', '建筑城市': '🏙', '运动体育': '⚽', '交通工具': '🚗', '食物': '🍽', '服饰时尚': '👗', '商业科技': '💼', '游戏娱乐': '🎮', '艺术': '🎨', '其他': '🖼' };
+      const icon = icons[cat] || '🖼';
+      const w = img.width || 400, h = img.height || 300;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="45%" text-anchor="middle" font-size="${Math.min(w, h) * 0.18}" dominant-baseline="central">${icon}</text><text x="50%" y="68%" text-anchor="middle" font-size="${Math.min(w, h) * 0.07}" fill="%239ca3af" font-family="system-ui,sans-serif" dominant-baseline="central">${label}</text></svg>`;
+      img.src = 'data:image/svg+xml,' + svg;
+    }, true);
+  </script>
+</head>
+
+<body class="bg-background text-on-surface font-sans">
+
+  <!-- @nav:start 导航组件 -->
+  <header class="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-outline/30">
+    <div class="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
+      <a href="home.html" class="flex items-center gap-2">
+        <i data-lucide="image" class="w-6 h-6 text-primary"></i>
+        <span class="font-semibold text-lg text-on-surface">壁纸画廊</span>
+      </a>
+      <nav class="flex items-center gap-6">
+        <a href="home.html" class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">发现壁纸</a>
+        <a href="favorites.html" class="text-sm font-medium text-primary" aria-current="page">我的收藏</a>
+      </nav>
+    </div>
+  </header>
+  <!-- @nav:end 导航组件 -->
+
+  <main class="max-w-7xl mx-auto">
+    <!-- @main-content:start -->
+    <div class="px-6 py-8">
+      <!-- 页面标题 -->
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold text-on-surface">我的收藏</h1>
+        <p class="text-sm text-on-surface-variant mt-1">收藏你喜爱的壁纸，随时查看与下载</p>
+      </div>
+
+      <!-- 空态提示（默认隐藏） -->
+      <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20">
+        <div class="w-20 h-20 rounded-full bg-surface-container flex items-center justify-center mb-4">
+          <i data-lucide="heart-off" class="w-10 h-10 text-on-surface-variant"></i>
+        </div>
+        <p class="text-base text-on-surface-variant mb-6">暂无收藏，去首页逛逛吧</p>
+        <a href="home.html" id="btn-goto-home" class="inline-flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-md text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all">
+          <i data-lucide="compass" class="w-4 h-4"></i>
+          去发现壁纸
+        </a>
+      </div>
+
+      <!-- 收藏壁纸网格 -->
+      <div id="favorites-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        
+        <!-- 收藏壁纸卡片 1 - 极光之夜 -->
+        <div class="favorite-card group relative bg-surface rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300" data-id="1">
+          <div class="aspect-[3/4] overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1531368887094-e8b821b5e03f?w=400&h=533&fit=crop" 
+              alt="极光之夜" 
+              data-category="自然风景"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+          <!-- 悬停操作层 -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-white text-sm font-medium mb-3 truncate">极光之夜</p>
+              <div class="flex gap-2">
+                <button 
+                  id="btn-remove-1"
+                  class="btn-remove flex-1 inline-flex items-center justify-center gap-1.5 bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-md text-xs font-medium hover:bg-white/30 transition-colors"
+                  data-id="1"
+                >
+                  <i data-lucide="heart-off" class="w-3.5 h-3.5"></i>
+                  移除
+                </button>
+                <button 
+                  id="btn-download-1"
+                  class="btn-download flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-primary px-3 py-2 rounded-md text-xs font-medium hover:bg-white/90 transition-colors"
+                  data-id="1"
+                >
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  下载
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- 收藏标记 -->
+          <div class="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+            <i data-lucide="heart" class="w-4 h-4 text-error fill-error"></i>
+          </div>
+        </div>
+
+        <!-- 收藏壁纸卡片 2 - 赛博朋克城市 -->
+        <div class="favorite-card group relative bg-surface rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300" data-id="2">
+          <div class="aspect-[3/4] overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1515703409294-48f879a57f5a?w=400&h=533&fit=crop" 
+              alt="赛博朋克城市" 
+              data-category="建筑城市"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+          <!-- 悬停操作层 -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-white text-sm font-medium mb-3 truncate">赛博朋克城市</p>
+              <div class="flex gap-2">
+                <button 
+                  id="btn-remove-2"
+                  class="btn-remove flex-1 inline-flex items-center justify-center gap-1.5 bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-md text-xs font-medium hover:bg-white/30 transition-colors"
+                  data-id="2"
+                >
+                  <i data-lucide="heart-off" class="w-3.5 h-3.5"></i>
+                  移除
+                </button>
+                <button 
+                  id="btn-download-2"
+                  class="btn-download flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-primary px-3 py-2 rounded-md text-xs font-medium hover:bg-white/90 transition-colors"
+                  data-id="2"
+                >
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  下载
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- 收藏标记 -->
+          <div class="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+            <i data-lucide="heart" class="w-4 h-4 text-error fill-error"></i>
+          </div>
+        </div>
+
+        <!-- 收藏壁纸卡片 3 - 星空银河 -->
+        <div class="favorite-card group relative bg-surface rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300" data-id="3">
+          <div class="aspect-[3/4] overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1419242426260-b8c5e5e7e0b8?w=400&h=533&fit=crop" 
+              alt="星空银河" 
+              data-category="自然风景"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+          <!-- 悬停操作层 -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-white text-sm font-medium mb-3 truncate">星空银河</p>
+              <div class="flex gap-2">
+                <button 
+                  id="btn-remove-3"
+                  class="btn-remove flex-1 inline-flex items-center justify-center gap-1.5 bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-md text-xs font-medium hover:bg-white/30 transition-colors"
+                  data-id="3"
+                >
+                  <i data-lucide="heart-off" class="w-3.5 h-3.5"></i>
+                  移除
+                </button>
+                <button 
+                  id="btn-download-3"
+                  class="btn-download flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-primary px-3 py-2 rounded-md text-xs font-medium hover:bg-white/90 transition-colors"
+                  data-id="3"
+                >
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  下载
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- 收藏标记 -->
+          <div class="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+            <i data-lucide="heart" class="w-4 h-4 text-error fill-error"></i>
+          </div>
+        </div>
+
+        <!-- 收藏壁纸卡片 4 - 抽象几何 -->
+        <div class="favorite-card group relative bg-surface rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300" data-id="4">
+          <div class="aspect-[3/4] overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1550684378-43b7f46c3444?w=400&h=533&fit=crop" 
+              alt="抽象几何" 
+              data-category="艺术"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+          <!-- 悬停操作层 -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-white text-sm font-medium mb-3 truncate">抽象几何</p>
+              <div class="flex gap-2">
+                <button 
+                  id="btn-remove-4"
+                  class="btn-remove flex-1 inline-flex items-center justify-center gap-1.5 bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-md text-xs font-medium hover:bg-white/30 transition-colors"
+                  data-id="4"
+                >
+                  <i data-lucide="heart-off" class="w-3.5 h-3.5"></i>
+                  移除
+                </button>
+                <button 
+                  id="btn-download-4"
+                  class="btn-download flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-primary px-3 py-2 rounded-md text-xs font-medium hover:bg-white/90 transition-colors"
+                  data-id="4"
+                >
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  下载
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- 收藏标记 -->
+          <div class="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+            <i data-lucide="heart" class="w-4 h-4 text-error fill-error"></i>
+          </div>
+        </div>
+
+        <!-- 收藏壁纸卡片 5 - 山间云海 -->
+        <div class="favorite-card group relative bg-surface rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300" data-id="5">
+          <div class="aspect-[3/4] overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=533&fit=crop" 
+              alt="山间云海" 
+              data-category="自然风景"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+          <!-- 悬停操作层 -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-white text-sm font-medium mb-3 truncate">山间云海</p>
+              <div class="flex gap-2">
+                <button 
+                  id="btn-remove-5"
+                  class="btn-remove flex-1 inline-flex items-center justify-center gap-1.5 bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-md text-xs font-medium hover:bg-white/30 transition-colors"
+                  data-id="5"
+                >
+                  <i data-lucide="heart-off" class="w-3.5 h-3.5"></i>
+                  移除
+                </button>
+                <button 
+                  id="btn-download-5"
+                  class="btn-download flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-primary px-3 py-2 rounded-md text-xs font-medium hover:bg-white/90 transition-colors"
+                  data-id="5"
+                >
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  下载
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- 收藏标记 -->
+          <div class="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+            <i data-lucide="heart" class="w-4 h-4 text-error fill-error"></i>
+          </div>
+        </div>
+
+        <!-- 收藏壁纸卡片 6 - 极简线条 -->
+        <div class="favorite-card group relative bg-surface rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300" data-id="6">
+          <div class="aspect-[3/4] overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1557682254-8f0d6c66c52b?w=400&h=533&fit=crop" 
+              alt="极简线条" 
+              data-category="艺术"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+          <!-- 悬停操作层 -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-white text-sm font-medium mb-3 truncate">极简线条</p>
+              <div class="flex gap-2">
+                <button 
+                  id="btn-remove-6"
+                  class="btn-remove flex-1 inline-flex items-center justify-center gap-1.5 bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-md text-xs font-medium hover:bg-white/30 transition-colors"
+                  data-id="6"
+                >
+                  <i data-lucide="heart-off" class="w-3.5 h-3.5"></i>
+                  移除
+                </button>
+                <button 
+                  id="btn-download-6"
+                  class="btn-download flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-primary px-3 py-2 rounded-md text-xs font-medium hover:bg-white/90 transition-colors"
+                  data-id="6"
+                >
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  下载
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- 收藏标记 -->
+          <div class="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+            <i data-lucide="heart" class="w-4 h-4 text-error fill-error"></i>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <!-- @main-content:end -->
+  </main>
+
+  <script>
+    lucide.createIcons();
+
+    $(function() {
+      // 移除收藏按钮点击事件
+      // 完整交互行为：
+      // 1. 从收藏列表中移除该壁纸卡片
+      // 2. 更新 localStorage 中的收藏数据
+      // 3. 如果移除后列表为空，显示空态提示
+      // 4. 同步更新首页该壁纸的收藏状态（如果首页已打开）
+      $('#favorites-grid').on('click', '.btn-remove', function() {
+        const cardId = $(this).data('id');
+        const $card = $(this).closest('.favorite-card');
+        
+        // 添加移除动画
+        $card.addClass('opacity-0 scale-95');
+        
+        setTimeout(function() {
+          $card.remove();
+          
+          // 检查是否还有收藏项
+          if ($('#favorites-grid .favorite-card').length === 0) {
+            $('#favorites-grid').addClass('hidden');
+            $('#empty-state').removeClass('hidden');
+            lucide.createIcons();
+          }
+        }, 300);
+        
+        console.log('移除收藏:', cardId);
+      });
+
+      // 下载按钮点击事件
+      // 完整交互行为：
+      // 1. 获取该壁纸的高清原图 URL
+      // 2. 触发浏览器下载（通过创建隐藏的 <a download> 标签）
+      // 3. 更新该壁纸的下载次数统计
+      $('#favorites-grid').on('click', '.btn-download', function() {
+        const cardId = $(this).data('id');
+        const imgSrc = $(this).closest('.favorite-card').find('img').attr('src');
+        
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.href = imgSrc;
+        link.download = 'wallpaper-' + cardId + '.jpg';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log('下载壁纸:', cardId, imgSrc);
+      });
+
+      // 壁纸卡片点击事件 - 跳转到详情页
+      // 完整交互行为：
+      // 1. 获取壁纸 ID
+      // 2. 跳转到详情页，传递壁纸 ID 参数
+      $('#favorites-grid').on('click', '.favorite-card', function(e) {
+        // 如果点击的是按钮，不触发卡片点击
+        if ($(e.target).closest('button').length) return;
+        
+        const cardId = $(this).data('id');
+        window.location.href = 'wallpaper.html?id=' + cardId;
+      });
+    });
+  </script>
+</body>
+
+</html>
