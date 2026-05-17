@@ -1,215 +1,299 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useMemo } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Search, Moon, Sun, Heart, Download, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ExternalLink, Image as ImageIcon, Link as LinkIcon, FileText } from 'lucide-react';
+import { useFavorites } from '@/hooks/use-favorites';
+import { wallpapers, categories, getWallpapersByCategory, formatNumber } from '@/lib/wallpaper-data';
+import type { WallpaperCategory } from '@/types/wallpaper';
 
-interface FetchResult {
-  title?: string;
-  url?: string;
-  status_code?: number;
-  status_message?: string;
-  text_content?: string;
-  images?: Array<{
-    url?: string;
-    original_url?: string;
-    width?: number;
-    height?: number;
-  }>;
-  links?: string[];
-  display_info?: {
-    no_display?: boolean;
-    no_display_reason?: string;
+// 导航栏组件
+function Navbar({ favoriteCount }: { favoriteCount: number }) {
+  const [isDark, setIsDark] = useState(false);
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+    document.documentElement.classList.toggle('dark');
   };
-  error?: string;
-  details?: string;
-}
-
-export default function Home() {
-  const [data, setData] = useState<FetchResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const targetUrl = 'https://www.coze.cn/session/7631141699774939430';
-
-  useEffect(() => {
-    async function fetchUrl() {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/fetch-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: targetUrl }),
-        });
-        const result = await response.json();
-        
-        if (result.error) {
-          setError(result.error + (result.details ? `: ${result.details}` : ''));
-        } else {
-          setData(result);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch URL');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchUrl();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-4xl mx-auto">
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* 标题区域 */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="text-2xl">{data?.title || '页面内容'}</CardTitle>
-                {data?.url && (
-                  <CardDescription className="flex items-center gap-2 mt-2">
-                    <ExternalLink className="h-4 w-4" />
-                    <a 
-                      href={data.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline break-all"
-                    >
-                      {data.url}
-                    </a>
-                  </CardDescription>
-                )}
-              </div>
-              <Badge variant={data?.status_code === 0 ? 'default' : 'destructive'}>
-                {data?.status_code === 0 ? '成功' : `错误: ${data?.status_code}`}
-              </Badge>
+    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/20 transition-all duration-300">
+      <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <span className="font-semibold text-lg text-foreground">壁纸画廊</span>
+        </Link>
+
+        {/* 右侧操作 */}
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <Search className="w-5 h-5 text-muted-foreground" />
+          </Button>
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleTheme}>
+            {isDark ? (
+              <Sun className="w-5 h-5 text-muted-foreground" />
+            ) : (
+              <Moon className="w-5 h-5 text-muted-foreground" />
+            )}
+          </Button>
+          <Link href="/favorites">
+            <Button variant="ghost" size="icon" className="rounded-full relative">
+              <Heart className="w-5 h-5 text-muted-foreground" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
+                  {favoriteCount > 9 ? '9+' : favoriteCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// AI 搜索框组件
+function AISearchBar() {
+  const [query, setQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      // TODO: 实现 AI 搜索
+      console.log('AI Search:', query);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          发现你的下一张壁纸
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          AI精选高质量壁纸 · 每日更新
+        </p>
+      </div>
+      <form onSubmit={handleSearch}>
+        <div className="relative">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <Search className="w-5 h-5 text-muted-foreground" />
+            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+          </div>
+          <Input
+            type="text"
+            placeholder="搜索你想要的壁纸..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-14 pl-14 pr-6 text-lg rounded-2xl bg-card border-border shadow-card focus:shadow-float transition-shadow"
+          />
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// 分类标签栏组件
+function CategoryTabs({
+  activeCategory,
+  onCategoryChange,
+}: {
+  activeCategory: WallpaperCategory;
+  onCategoryChange: (category: WallpaperCategory) => void;
+}) {
+  return (
+    <div className="sticky top-16 z-30 bg-background/80 backdrop-blur-md border-b border-border/20">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex items-center gap-2 py-4 overflow-x-auto scrollbar-hide">
+          {categories.map((category) => (
+            <Button
+              key={category.id}
+              variant={activeCategory === category.id ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onCategoryChange(category.id)}
+              className={`rounded-full px-4 whitespace-nowrap transition-all ${
+                activeCategory === category.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              {category.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 壁纸卡片组件
+function WallpaperCard({
+  wallpaper,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  wallpaper: typeof wallpapers[0];
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // TODO: 实现下载功能
+    window.open(wallpaper.imageUrl, '_blank');
+  };
+
+  return (
+    <Link
+      href={`/wallpaper/${wallpaper.id}`}
+      className="masonry-item block group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative overflow-hidden rounded-xl bg-muted shadow-card group-hover:shadow-float transition-all duration-300">
+        {/* 图片 */}
+        <div className="relative aspect-[3/4] overflow-hidden">
+          <Image
+            src={wallpaper.thumbnailUrl}
+            alt={wallpaper.title}
+            fill
+            className={`object-cover transition-transform duration-500 ${
+              isHovered ? 'scale-105' : 'scale-100'
+            }`}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          />
+        </div>
+
+        {/* Hover 遮罩 */}
+        <div
+          className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-300 ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <h3 className="text-white font-medium text-sm mb-2 truncate">
+              {wallpaper.title}
+            </h3>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant={isFavorite ? 'default' : 'secondary'}
+                className={`rounded-full px-3 ${
+                  isFavorite
+                    ? 'bg-destructive text-white hover:bg-destructive/90'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleFavorite();
+                }}
+              >
+                <Heart
+                  className={`w-4 h-4 mr-1 ${isFavorite ? 'fill-current' : ''}`}
+                />
+                {isFavorite ? '已收藏' : '收藏'}
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="rounded-full px-3 bg-white/20 text-white hover:bg-white/30"
+                onClick={handleDownload}
+              >
+                <Download className="w-4 h-4 mr-1" />
+                下载
+              </Button>
             </div>
-          </CardHeader>
-        </Card>
+          </div>
+        </div>
 
-        {/* 无法显示提示 */}
-        {data?.display_info?.no_display && (
-          <Alert>
-            <AlertDescription>
-              无法显示内容: {data.display_info.no_display_reason}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* 文本内容 */}
-        {data?.text_content && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="h-5 w-5" />
-                文本内容
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed">
-                {data.text_content}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 图片内容 */}
-        {data?.images && data.images.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <ImageIcon className="h-5 w-5" />
-                图片 ({data.images.length} 张)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {data.images.map((img, index) => (
-                  <div key={index} className="space-y-2">
-                    {img.url ? (
-                      <img 
-                        src={img.url} 
-                        alt={`图片 ${index + 1}`}
-                        className="w-full rounded-lg border"
-                        style={{ maxWidth: '100%' }}
-                      />
-                    ) : (
-                      <div className="w-full h-32 bg-muted rounded-lg flex items-center justify-center">
-                        <span className="text-muted-foreground text-sm">图片无法显示</span>
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {img.width && img.height && `${img.width} × ${img.height}`}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 链接内容 */}
-        {data?.links && data.links.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <LinkIcon className="h-5 w-5" />
-                链接 ({data.links.length} 个)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {data.links.slice(0, 20).map((link, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <LinkIcon className="h-3 w-3 text-muted-foreground" />
-                    <a 
-                      href={link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline text-sm break-all"
-                    >
-                      {link}
-                    </a>
-                  </li>
-                ))}
-                {data.links.length > 20 && (
-                  <li className="text-muted-foreground text-sm">
-                    ... 还有 {data.links.length - 20} 个链接
-                  </li>
-                )}
-              </ul>
-            </CardContent>
-          </Card>
+        {/* 收藏标记 */}
+        {isFavorite && !isHovered && (
+          <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-destructive flex items-center justify-center shadow-lg">
+            <Heart className="w-4 h-4 text-white fill-current" />
+          </div>
         )}
       </div>
+    </Link>
+  );
+}
+
+// 瀑布流网格组件
+function WallpaperGrid({
+  wallpapers: wallpapersList,
+  favorites,
+  onToggleFavorite,
+}: {
+  wallpapers: typeof wallpapers;
+  favorites: Record<string, boolean>;
+  onToggleFavorite: (id: string) => void;
+}) {
+  return (
+    <div className="masonry-grid max-w-7xl mx-auto px-6">
+      {wallpapersList.map((wallpaper) => (
+        <WallpaperCard
+          key={wallpaper.id}
+          wallpaper={wallpaper}
+          isFavorite={!!favorites[wallpaper.id]}
+          onToggleFavorite={() => onToggleFavorite(wallpaper.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+// 加载更多按钮
+function LoadMoreButton() {
+  return (
+    <div className="flex justify-center py-12">
+      <Button
+        variant="outline"
+        size="lg"
+        className="rounded-full px-8 border-border hover:bg-muted"
+      >
+        加载更多
+      </Button>
+    </div>
+  );
+}
+
+// 主页面
+export default function HomePage() {
+  const [activeCategory, setActiveCategory] = useState<WallpaperCategory>('all');
+  const { favorites, toggleFavorite, favoriteCount } = useFavorites();
+
+  // 根据分类过滤壁纸
+  const filteredWallpapers = useMemo(() => {
+    return getWallpapersByCategory(activeCategory);
+  }, [activeCategory]);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar favoriteCount={favoriteCount} />
+      <main>
+        <AISearchBar />
+        <CategoryTabs
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+        />
+        <div className="py-8">
+          <WallpaperGrid
+            wallpapers={filteredWallpapers}
+            favorites={favorites}
+            onToggleFavorite={toggleFavorite}
+          />
+        </div>
+        <LoadMoreButton />
+      </main>
     </div>
   );
 }

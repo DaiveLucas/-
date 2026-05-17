@@ -4,52 +4,29 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: '新应用 | 扣子编程',
-    template: '%s | 扣子编程',
+    default: '壁纸画廊 | 发现你的下一张壁纸',
+    template: '%s | 壁纸画廊',
   },
   description:
-    '扣子编程是一款一站式云端 Vibe Coding 开发平台。通过对话轻松构建智能体、工作流和网站，实现从创意到上线的无缝衔接。',
+    'AI精选高质量壁纸，每日更新。自然风景、动漫、赛博朋克、极简、治愈系、太空、抽象等多种分类，一键收藏下载。',
   keywords: [
-    '扣子编程',
-    'Coze Code',
-    'Vibe Coding',
-    'AI 编程',
-    '智能体搭建',
-    '工作流搭建',
-    '网站搭建',
-    '网站部署',
-    '全栈开发',
-    'AI 工程师',
+    '壁纸',
+    '高清壁纸',
+    '桌面壁纸',
+    '手机壁纸',
+    '壁纸下载',
+    'AI壁纸',
+    '壁纸推荐',
   ],
-  authors: [{ name: 'Coze Code Team', url: 'https://code.coze.cn' }],
+  authors: [{ name: '壁纸画廊' }],
   generator: 'Coze Code',
-  // icons: {
-  //   icon: '',
-  // },
   openGraph: {
-    title: '扣子编程 | 你的 AI 工程师已就位',
-    description:
-      '我正在使用扣子编程 Vibe Coding，让创意瞬间上线。告别拖拽，拥抱心流。',
-    url: 'https://code.coze.cn',
-    siteName: '扣子编程',
+    title: '壁纸画廊 | 发现你的下一张壁纸',
+    description: 'AI精选高质量壁纸，每日更新。',
+    siteName: '壁纸画廊',
     locale: 'zh_CN',
     type: 'website',
-    // images: [
-    //   {
-    //     url: '',
-    //     width: 1200,
-    //     height: 630,
-    //     alt: '扣子编程 - 你的 AI 工程师',
-    //   },
-    // ],
   },
-  // twitter: {
-  //   card: 'summary_large_image',
-  //   title: 'Coze Code | Your AI Engineer is Here',
-  //   description:
-  //     'Build and deploy full-stack applications through AI conversation. No env setup, just flow.',
-  //   // images: [''],
-  // },
   robots: {
     index: true,
     follow: true,
