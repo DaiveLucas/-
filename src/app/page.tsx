@@ -259,12 +259,18 @@ export default function HomePage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const lastLoadTimeRef = useRef(0); // 防抖时间戳
+  const isInitializedRef = useRef(false); // 标记是否已初始化
 
   // 加载更多壁纸
   const loadMore = useCallback(async () => {
     // 加锁机制：正在加载 / 没有更多 / 1秒内已加载过
     const now = Date.now();
     if (isLoading || !hasMore || now - lastLoadTimeRef.current < 1000) return;
+    
+    // 标记已初始化
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+    }
     
     setIsLoading(true);
     lastLoadTimeRef.current = now;
@@ -286,15 +292,23 @@ export default function HomePage() {
     setIsLoading(false);
   }, [page, isLoading, hasMore]);
 
-  // 设置 IntersectionObserver
+  // 设置 IntersectionObserver - 只执行一次
   useEffect(() => {
+    // 已经有初始数据，不需要重新加载
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoading && hasMore) {
+        // 使用 refs 获取最新值，避免依赖项变化
+        const now = Date.now();
+        if (
+          entries[0].isIntersecting &&
+          !isLoading &&
+          hasMore &&
+          now - lastLoadTimeRef.current >= 1000
+        ) {
           loadMore();
         }
       },
@@ -310,7 +324,8 @@ export default function HomePage() {
         observerRef.current.disconnect();
       }
     };
-  }, [loadMore, isLoading, hasMore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 只在挂载时执行一次
 
   // 滚动到搜索框
   const scrollToSearch = () => {
