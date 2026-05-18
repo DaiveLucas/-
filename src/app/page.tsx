@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Heart, Download, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,9 +20,9 @@ import Sidebar from '@/components/Sidebar';
 // Footer 组件
 function Footer() {
   return (
-    <footer className="border-t border-border/20 bg-background/50">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="text-center space-y-2">
+    <footer className="border-t border-border/10 bg-background/50">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="text-center space-y-1">
           <p className="text-muted-foreground text-sm">
             壁紙畫廊 · AI精选高质量壁纸
           </p>
@@ -44,31 +44,31 @@ function Navbar({
   onSearchClick: () => void;
 }) {
   return (
-    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/20 transition-all duration-300">
-      <div className="flex-1 h-16 flex items-center justify-between px-6">
+    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/10 transition-all duration-300">
+      <div className="flex-1 h-14 flex items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-semibold text-lg text-foreground">壁纸画廊</span>
+          <span className="font-medium text-foreground">壁纸画廊</span>
         </Link>
 
         {/* 右侧操作 */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
+            className="rounded-full w-9 h-9"
             onClick={onSearchClick}
           >
-            <Search className="w-5 h-5 text-muted-foreground" />
+            <Search className="w-4 h-4 text-muted-foreground" />
           </Button>
           <Link href="/favorites">
-            <Button variant="ghost" size="icon" className="rounded-full relative">
-              <Heart className="w-5 h-5 text-muted-foreground" />
+            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 relative">
+              <Heart className="w-4 h-4 text-muted-foreground" />
               {favoriteCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
                   {favoriteCount > 9 ? '9+' : favoriteCount}
                 </span>
               )}
@@ -91,12 +91,12 @@ function AISearchBar({
   searchRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
-    <div ref={searchRef} className="max-w-2xl mx-auto px-6 py-12">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+    <div ref={searchRef} className="max-w-2xl mx-auto px-4 py-8">
+      <div className="text-center mb-6">
+        <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
           发现你的下一张壁纸
         </h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           AI精选高质量壁纸 · 每日更新
         </p>
       </div>
@@ -110,7 +110,7 @@ function AISearchBar({
           placeholder="搜索你想要的壁纸..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="h-14 pl-14 pr-6 text-lg rounded-2xl bg-card border-border shadow-card focus:shadow-float transition-shadow"
+          className="h-12 pl-14 pr-6 text-base rounded-xl bg-card border-border/50 shadow-sm focus:shadow-md transition-shadow"
         />
       </div>
     </div>
@@ -126,16 +126,16 @@ function CategoryTabs({
   onCategoryChange: (category: WallpaperCategory) => void;
 }) {
   return (
-    <div className="sticky top-16 md:top-16 z-20 bg-background/80 backdrop-blur-md border-b border-border/20">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center gap-2 py-4 overflow-x-auto scrollbar-hide">
+    <div className="sticky top-14 md:top-14 z-20 bg-background/80 backdrop-blur-md border-b border-border/10">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center gap-1.5 py-3 overflow-x-auto scrollbar-hide">
           {categories.map((category) => (
             <Button
               key={category.id}
               variant={activeCategory === category.id ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onCategoryChange(category.id)}
-              className={`rounded-full px-4 whitespace-nowrap transition-all ${
+              className={`rounded-full px-3 h-8 text-sm whitespace-nowrap transition-all ${
                 activeCategory === category.id
                   ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-muted'
@@ -150,7 +150,7 @@ function CategoryTabs({
   );
 }
 
-// 壁纸卡片组件
+// 壁纸卡片组件 - Unsplash风格
 function WallpaperCard({
   wallpaper,
   isFavorite,
@@ -161,6 +161,7 @@ function WallpaperCard({
   onToggleFavorite: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -171,67 +172,64 @@ function WallpaperCard({
   return (
     <Link
       href={`/wallpaper/${wallpaper.id}`}
-      className="masonry-item block group"
+      className="masonry-item block"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative overflow-hidden rounded-xl bg-muted shadow-card group-hover:shadow-float transition-all duration-300">
-        {/* 图片 - 使用 img 标签让图片按原始比例自然撑开，实现真正的瀑布流 */}
+      <div className="relative overflow-hidden rounded-lg bg-muted/30">
+        {/* 骨架/模糊占位 */}
+        {!isLoaded && (
+          <div className="absolute inset-0 bg-muted animate-pulse" />
+        )}
+        
+        {/* 图片 - 按原始比例展示 */}
         <img
           src={wallpaper.thumbnailUrl}
           alt={wallpaper.title}
-          className={`w-full h-auto object-cover transition-transform duration-500 ${
-            isHovered ? 'scale-105' : 'scale-100'
+          loading="lazy"
+          onLoad={() => setIsLoaded(true)}
+          className={`w-full h-auto object-cover rounded-lg transition-all duration-500 ${
+            isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
+          } ${
+            isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
           }`}
         />
 
-        {/* Hover 遮罩 */}
+        {/* Hover 遮罩 - 黑色半透明 */}
         <div
-          className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-300 ${
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 rounded-lg ${
             isHovered ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h3 className="text-white font-medium text-sm mb-2 truncate">
-              {wallpaper.title}
-            </h3>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant={isFavorite ? 'default' : 'secondary'}
-                className={`rounded-full px-3 ${
-                  isFavorite
-                    ? 'bg-destructive text-white hover:bg-destructive/90'
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onToggleFavorite();
-                }}
-              >
-                <Heart
-                  className={`w-4 h-4 mr-1 ${isFavorite ? 'fill-current' : ''}`}
-                />
-                {isFavorite ? '已收藏' : '收藏'}
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="rounded-full px-3 bg-white/20 text-white hover:bg-white/30"
-                onClick={handleDownload}
-              >
-                <Download className="w-4 h-4 mr-1" />
-                下载
-              </Button>
-            </div>
+          {/* 右上角操作按钮 */}
+          <div className="absolute top-2 right-2 flex items-center gap-1.5">
+            <button
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                isFavorite 
+                  ? 'bg-white text-destructive' 
+                  : 'bg-white/90 text-foreground hover:bg-white'
+              }`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+            </button>
+            <button
+              className="w-8 h-8 rounded-full bg-white/90 text-foreground hover:bg-white flex items-center justify-center transition-all duration-200"
+              onClick={handleDownload}
+            >
+              <Download className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* 收藏标记 */}
+        {/* 收藏标记（非hover时显示） */}
         {isFavorite && !isHovered && (
-          <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-destructive flex items-center justify-center shadow-lg">
-            <Heart className="w-4 h-4 text-white fill-current" />
+          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center">
+            <Heart className="w-3 h-3 text-destructive fill-current" />
           </div>
         )}
       </div>
@@ -250,7 +248,7 @@ function WallpaperGrid({
   onToggleFavorite: (id: string) => void;
 }) {
   return (
-    <div className="masonry-grid max-w-7xl mx-auto px-6">
+    <div className="masonry-grid max-w-7xl mx-auto px-4">
       {wallpapersList.map((wallpaper) => (
         <WallpaperCard
           key={wallpaper.id}
@@ -307,16 +305,16 @@ export default function HomePage() {
       <Sidebar searchInputRef={searchRef} />
       
       {/* 移动端顶部导航 */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-4">
+      <header className="md:hidden fixed top-0 left-0 right-0 h-12 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-4">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
-          <span className="font-semibold text-foreground">壁纸画廊</span>
+          <span className="font-medium text-sm text-foreground">壁纸画廊</span>
         </Link>
       </header>
 
-      <main className="flex-1 md:ml-16 pt-16 md:pt-0">
+      <main className="flex-1 md:ml-16 pt-14 md:pt-0">
         <Navbar favoriteCount={favoriteCount} onSearchClick={scrollToSearch} />
         <div className="flex-1">
           <AISearchBar
@@ -328,14 +326,14 @@ export default function HomePage() {
             activeCategory={activeCategory}
             onCategoryChange={setActiveCategory}
           />
-          <div className="py-8 pb-20 md:pb-8">
+          <div className="py-6 pb-20 md:pb-6">
             <WallpaperGrid
               wallpapers={filteredWallpapers}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}
             />
             {/* 已展示全部提示 */}
-            <div className="text-center py-12 text-muted-foreground text-sm">
+            <div className="text-center py-10 text-muted-foreground text-sm">
               已展示全部 {filteredWallpapers.length} 张壁纸
             </div>
           </div>
