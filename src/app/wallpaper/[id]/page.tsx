@@ -89,6 +89,12 @@ function FullscreenPreview({
   hasPrev: boolean;
 }) {
   const [isDesktopRatio, setIsDesktopRatio] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // 重置加载状态当壁纸改变时
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [wallpaper.id]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -148,17 +154,36 @@ function FullscreenPreview({
         </button>
       )}
 
-      {/* 图片容器 */}
+      {/* 图片容器 - 渐进式加载 */}
       <div
         className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* 缩略图（模糊占位） */}
+        <img
+          src={wallpaper.thumbnailUrl}
+          alt={wallpaper.title}
+          className={`max-w-full max-h-[90vh] object-contain transition-all duration-500 ${
+            isDesktopRatio ? 'aspect-video' : ''
+          }`}
+          style={{
+            filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
+            opacity: imageLoaded ? 0 : 1,
+            position: imageLoaded ? 'absolute' : 'relative',
+          }}
+        />
+        {/* 原图 */}
         <img
           src={wallpaper.imageUrl}
           alt={wallpaper.title}
-          className={`max-w-full max-h-[90vh] object-contain transition-all duration-300 ${
+          className={`max-w-full max-h-[90vh] object-contain transition-all duration-500 ${
             isDesktopRatio ? 'aspect-video' : ''
           }`}
+          style={{
+            opacity: imageLoaded ? 1 : 0,
+            position: imageLoaded ? 'relative' : 'absolute',
+          }}
+          onLoad={() => setImageLoaded(true)}
         />
       </div>
 
@@ -288,17 +313,24 @@ export default function WallpaperDetailPage() {
                 <img
                   src={wallpaper.thumbnailUrl}
                   alt={wallpaper.title}
-                  className={`w-full h-auto object-cover transition-opacity duration-500 ${
-                    imageLoaded ? 'opacity-0 absolute inset-0' : 'opacity-100 blur-xl'
-                  }`}
+                  className="w-full h-auto object-cover"
+                  style={{
+                    filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
+                    opacity: imageLoaded ? 0 : 1,
+                    transition: 'filter 0.5s ease-out, opacity 0.5s ease-out',
+                  }}
                 />
                 {/* 原图 */}
                 <img
                   src={wallpaper.imageUrl}
                   alt={wallpaper.title}
-                  className={`w-full h-auto object-cover transition-opacity duration-500 ${
-                    imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'
-                  }`}
+                  className="w-full h-auto object-cover"
+                  style={{
+                    opacity: imageLoaded ? 1 : 0,
+                    position: imageLoaded ? 'relative' : 'absolute',
+                    inset: 0,
+                    transition: 'opacity 0.5s ease-out',
+                  }}
                   onLoad={() => setImageLoaded(true)}
                 />
                 {/* 加载指示器 */}
