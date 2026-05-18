@@ -103,7 +103,6 @@ function AISearchBar({
       <div className="relative">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
           <Search className="w-5 h-5 text-muted-foreground" />
-          <Sparkles className="w-4 h-4 text-primary animate-pulse" />
         </div>
         <Input
           type="text"
