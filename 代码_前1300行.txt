@@ -1,0 +1,1300 @@
+# 壁纸网站完整代码文档 v3.0
+
+## 项目信息
+
+- **技术栈**: Next.js 16 + React 19 + TypeScript 5 + Tailwind CSS 4 + shadcn/ui
+- **视觉风格**: 画廊风（参考 Unsplash 高级感）
+- **功能**: 瀑布流壁纸展示、分类筛选、搜索、收藏、下载历史、深色模式
+
+---
+
+## 目录结构
+
+\`\`\`
+src/
+├── app/
+│   ├── page.tsx              # 首页
+│   ├── layout.tsx            # 根布局
+│   ├── globals.css           # 全局样式
+│   ├── favorites/page.tsx    # 收藏页
+│   ├── downloads/page.tsx    # 下载历史页
+│   └── wallpaper/[id]/page.tsx # 详情页
+├── components/
+│   ├── ui/                   # shadcn/ui 组件
+│   └── Sidebar.tsx           # 左侧导航栏
+├── hooks/
+│   ├── use-favorites.ts      # 收藏状态管理
+│   └── use-download-history.ts # 下载历史管理
+├── lib/
+│   ├── wallpaper-data.ts     # 壁纸数据和工具函数
+│   ├── download.ts           # 下载工具
+│   └── utils.ts              # 通用工具函数
+└── types/
+    └── wallpaper.ts          # 类型定义
+\`\`\`
+
+---
+
+
+## 三、类型定义 (src/types/wallpaper.ts)
+
+\`\`\`typescript
+// 壁纸分类
+export type WallpaperCategory =
+  | 'all'
+  | 'popular'
+  | 'latest'
+  | 'anime'
+  | 'landscape'
+  | 'healing'
+  | 'cyberpunk'
+  | 'minimalist'
+  | 'space'
+  | 'abstract';
+
+// 分类配置
+export interface CategoryConfig {
+  id: WallpaperCategory;
+  label: string;
+  icon?: string;
+}
+
+// 壁纸数据
+export interface Wallpaper {
+  id: string;
+  title: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  category: WallpaperCategory;
+  tags: string[];
+  resolution: {
+    width: number;
+    height: number;
+  };
+  source?: string;
+  views?: number;
+  downloads?: number;
+  createdAt: string;
+}
+
+// 收藏状态
+export interface FavoriteState {
+  [id: string]: boolean;
+}
+```
+
+---
+
+## 四、壁纸数据 (src/lib/wallpaper-data.ts)
+
+\`\`\`typescript
+import type { Wallpaper, CategoryConfig, WallpaperCategory } from '@/types/wallpaper';
+
+// 分类配置
+export const categories: CategoryConfig[] = [
+  { id: 'all', label: '全部' },
+  { id: 'popular', label: '热门' },
+  { id: 'latest', label: '最新' },
+  { id: 'anime', label: '动漫' },
+  { id: 'landscape', label: '风景' },
+  { id: 'healing', label: '治愈系' },
+  { id: 'cyberpunk', label: '赛博朋克' },
+  { id: 'minimalist', label: '极简' },
+  { id: 'space', label: '太空' },
+  { id: 'abstract', label: '抽象' },
+];
+
+// Mock 壁纸数据（使用 picsum.photos 稳定图片服务）
+// 注意：thumbnailUrl 使用不同高度比例，实现真正的瀑布流效果
+export const wallpapers: Wallpaper[] = [
+  {
+    id: '1',
+    title: '雪山日出',
+    imageUrl: 'https://picsum.photos/id/15/1920/1280',
+    thumbnailUrl: 'https://picsum.photos/id/15/600/400', // 3:2 横向
+    category: 'landscape',
+    tags: ['自然风景', '山川', '日出'],
+    resolution: { width: 1920, height: 1280 },
+    source: 'Picsum',
+    views: 12580,
+    downloads: 3420,
+    createdAt: '2024-01-15',
+  },
+  {
+    id: '2',
+    title: '动漫风格',
+    imageUrl: 'https://picsum.photos/id/65/1920/1080',
+    thumbnailUrl: 'https://picsum.photos/id/65/600/750', // 4:5 竖向
+    category: 'anime',
+    tags: ['动漫', '唯美', '梦幻'],
+    resolution: { width: 1920, height: 1080 },
+    source: 'Picsum',
+    views: 8920,
+    downloads: 2100,
+    createdAt: '2024-01-14',
+  },
+  {
+    id: '3',
+    title: '霓虹城市',
+    imageUrl: 'https://picsum.photos/id/32/1920/1280',
+    thumbnailUrl: 'https://picsum.photos/id/32/600/900', // 2:3 竖向
+    category: 'cyberpunk',
+    tags: ['赛博朋克', '霓虹', '城市'],
+    resolution: { width: 1920, height: 1280 },
+    source: 'Picsum',
+    views: 15600,
+    downloads: 4800,
+    createdAt: '2024-01-13',
+  },
+  {
+    id: '4',
+    title: '极简建筑',
+    imageUrl: 'https://picsum.photos/id/57/1920/1080',
+    thumbnailUrl: 'https://picsum.photos/id/57/600/600', // 1:1 正方形
+    category: 'minimalist',
+    tags: ['极简', '建筑', '纯净'],
+    resolution: { width: 1920, height: 1080 },
+    source: 'Picsum',
+    views: 6500,
+    downloads: 1800,
+    createdAt: '2024-01-12',
+  },
+  {
+    id: '5',
+    title: '治愈森林',
+    imageUrl: 'https://picsum.photos/id/16/1920/1280',
+    thumbnailUrl: 'https://picsum.photos/id/16/600/800', // 3:4 竖向
+    category: 'healing',
+    tags: ['治愈系', '森林', '自然'],
+    resolution: { width: 1920, height: 1280 },
+    source: 'Picsum',
+    views: 11200,
+    downloads: 3200,
+    createdAt: '2024-01-11',
+  },
+  {
+    id: '6',
+    title: '璀璨星空',
+    imageUrl: 'https://picsum.photos/id/26/1920/1280',
+    thumbnailUrl: 'https://picsum.photos/id/26/600/350', // 宽幅横向
+    category: 'space',
+    tags: ['太空', '星空', '宇宙'],
+    resolution: { width: 1920, height: 1280 },
+    source: 'Picsum',
+    views: 18900,
+    downloads: 5600,
+    createdAt: '2024-01-10',
+  },
+  {
+    id: '7',
+    title: '抽象艺术',
+    imageUrl: 'https://picsum.photos/id/49/1920/1080',
+    thumbnailUrl: 'https://picsum.photos/id/49/600/850', // 竖向长图
+    category: 'abstract',
+    tags: ['抽象', '艺术', '色彩'],
+    resolution: { width: 1920, height: 1080 },
+    source: 'Picsum',
+    views: 7800,
+    downloads: 2200,
+    createdAt: '2024-01-09',
+  },
+  {
+    id: '8',
+    title: '海浪沙滩',
+    imageUrl: 'https://picsum.photos/id/10/1920/1280',
+    thumbnailUrl: 'https://picsum.photos/id/10/600/500', // 6:5 接近正方形
+    category: 'landscape',
+    tags: ['自然风景', '大海', '沙滩'],
+    resolution: { width: 1920, height: 1280 },
+    source: 'Picsum',
+    views: 9500,
+    downloads: 2700,
+    createdAt: '2024-01-08',
+  },
+  {
+    id: '9',
+    title: '银河星云',
+    imageUrl: 'https://picsum.photos/id/27/1920/1280',
+    thumbnailUrl: 'https://picsum.photos/id/27/600/700', // 接近正方形偏竖
+    category: 'space',
+    tags: ['太空', '银河', '星云'],
+    resolution: { width: 1920, height: 1280 },
+    source: 'Picsum',
+    views: 22100,
+    downloads: 6800,
+    createdAt: '2024-01-07',
+  },
+  {
+    id: '10',
+    title: '城市夜景',
+    imageUrl: 'https://picsum.photos/id/37/1920/1280',
+    thumbnailUrl: 'https://picsum.photos/id/37/600/380', // 宽幅
+    category: 'cyberpunk',
+    tags: ['赛博朋克', '城市', '夜景'],
+    resolution: { width: 1920, height: 1280 },
+    source: 'Picsum',
+    views: 13400,
+    downloads: 4100,
+    createdAt: '2024-01-06',
+  },
+  {
+    id: '11',
+    title: '梦幻花海',
+    imageUrl: 'https://picsum.photos/id/23/1920/1080',
+    thumbnailUrl: 'https://picsum.photos/id/23/600/950', // 长竖图
+    category: 'healing',
+    tags: ['治愈系', '花海', '梦幻'],
+    resolution: { width: 1920, height: 1080 },
+    source: 'Picsum',
+    views: 10800,
+    downloads: 2900,
+    createdAt: '2024-01-05',
+  },
+  {
+    id: '12',
+    title: '极简线条',
+    imageUrl: 'https://picsum.photos/id/28/1920/1080',
+    thumbnailUrl: 'https://picsum.photos/id/28/600/550', // 接近正方形
+    category: 'minimalist',
+    tags: ['极简', '线条', '几何'],
+    resolution: { width: 1920, height: 1080 },
+    source: 'Picsum',
+    views: 5200,
+    downloads: 1500,
+    createdAt: '2024-01-04',
+  },
+  {
+    id: '13',
+    title: '山川湖泊',
+    imageUrl: 'https://picsum.photos/id/14/1920/1280',
+    thumbnailUrl: 'https://picsum.photos/id/14/600/320', // 超宽幅
+    category: 'landscape',
+    tags: ['自然风景', '山川', '湖泊'],
+    resolution: { width: 1920, height: 1280 },
+    source: 'Picsum',
+    views: 14200,
+    downloads: 3900,
+    createdAt: '2024-01-03',
+  },
+  {
+    id: '14',
+    title: '动漫风景',
+    imageUrl: 'https://picsum.photos/id/48/1920/1080',
+    thumbnailUrl: 'https://picsum.photos/id/48/600/720', // 竖向
+    category: 'anime',
+    tags: ['动漫', '风景', '唯美'],
+    resolution: { width: 1920, height: 1080 },
+    source: 'Picsum',
+    views: 7600,
+    downloads: 2100,
+    createdAt: '2024-01-02',
+  },
+  {
+    id: '15',
+    title: '抽象光影',
+    imageUrl: 'https://picsum.photos/id/43/1920/1080',
+    thumbnailUrl: 'https://picsum.photos/id/43/600/650', // 接近正方形
+    category: 'abstract',
+    tags: ['抽象', '光影', '艺术'],
+    resolution: { width: 1920, height: 1080 },
+    source: 'Picsum',
+    views: 6800,
+    downloads: 1900,
+    createdAt: '2024-01-01',
+  },
+  {
+    id: '16',
+    title: '未来城市',
+    imageUrl: 'https://picsum.photos/id/42/1920/1280',
+    thumbnailUrl: 'https://picsum.photos/id/42/600/1000', // 长竖图
+    category: 'cyberpunk',
+    tags: ['赛博朋克', '未来', '城市'],
+    resolution: { width: 1920, height: 1280 },
+    source: 'Picsum',
+    views: 16800,
+    downloads: 5200,
+    createdAt: '2023-12-31',
+  },
+];
+
+// 根据 ID 获取壁纸
+export function getWallpaperById(id: string): Wallpaper | undefined {
+  return wallpapers.find((w) => w.id === id);
+}
+
+// 根据分类筛选壁纸
+export function getWallpapersByCategory(category: string): Wallpaper[] {
+  if (category === 'all') return wallpapers;
+  return wallpapers.filter((w) => w.category === category);
+}
+
+// 获取热门壁纸（按下载量排序）
+export function getPopularWallpapers(): Wallpaper[] {
+  return [...wallpapers].sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0));
+}
+
+// 获取最新壁纸（按 id 倒序，id 越大越新）
+export function getLatestWallpapers(): Wallpaper[] {
+  return [...wallpapers].sort((a, b) => parseInt(b.id) - parseInt(a.id));
+}
+
+// 搜索壁纸（匹配标题和标签，不区分大小写）
+export function searchWallpapers(query: string): Wallpaper[] {
+  const lowerQuery = query.toLowerCase().trim();
+  if (!lowerQuery) return wallpapers;
+  
+  return wallpapers.filter((w) => {
+    const titleMatch = w.title.toLowerCase().includes(lowerQuery);
+    const tagMatch = w.tags.some((tag) => tag.toLowerCase().includes(lowerQuery));
+    return titleMatch || tagMatch;
+  });
+}
+
+// 获取相似壁纸（同分类，排除自身）
+export function getSimilarWallpapers(wallpaper: Wallpaper, limit: number = 6): Wallpaper[] {
+  return wallpapers
+    .filter((w) => w.category === wallpaper.category && w.id !== wallpaper.id)
+    .slice(0, limit);
+}
+
+// 格式化分辨率
+export function formatResolution(resolution: { width: number; height: number }): string {
+  return `${resolution.width} × ${resolution.height}`;
+}
+
+// 格式化数字（如浏览量）
+export function formatNumber(num: number | undefined): string {
+  if (num === undefined) return '0';
+  if (num >= 10000) {
+    return `${(num / 10000).toFixed(1)}万`;
+  }
+  return num.toLocaleString();
+}
+```
+
+---
+
+## 五、下载工具 (src/lib/download.ts)
+
+\`\`\`typescript
+import type { Wallpaper } from '@/types/wallpaper';
+
+const DOWNLOAD_HISTORY_KEY = 'downloaded-wallpapers';
+
+// 记录下载历史到 localStorage
+function recordDownload(wallpaper: Wallpaper) {
+  try {
+    const stored = localStorage.getItem(DOWNLOAD_HISTORY_KEY);
+    let history: { wallpaper: Wallpaper; downloadedAt: string }[] = stored ? JSON.parse(stored) : [];
+
+    // 检查是否已存在，如果存在则移除旧的
+    history = history.filter((item) => item.wallpaper.id !== wallpaper.id);
+
+    // 添加到最前面
+    history.unshift({
+      wallpaper,
+      downloadedAt: new Date().toISOString(),
+    });
+
+    localStorage.setItem(DOWNLOAD_HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.error('Failed to record download:', e);
+  }
+}
+
+// 下载单张图片
+export async function downloadImage(url: string, filename: string, wallpaper?: Wallpaper) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch image');
+
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+
+    // 延迟移除元素和释放 blob URL
+    setTimeout(() => {
+      if (link.parentNode) {
+        document.body.removeChild(link);
+      }
+      URL.revokeObjectURL(blobUrl);
+    }, 1000);
+
+    // 记录下载历史
+    if (wallpaper) {
+      recordDownload(wallpaper);
+    }
+  } catch (error) {
+    console.error('Download failed:', error);
+    // Fallback: 直接打开图片
+    window.open(url, '_blank');
+  }
+}
+
+// 批量下载图片
+export async function downloadMultipleImages(items: { url: string; filename: string; wallpaper?: Wallpaper }[]) {
+  for (let i = 0; i < items.length; i++) {
+    await downloadImage(items[i].url, items[i].filename, items[i].wallpaper);
+    // 等待一段时间避免浏览器拦截
+    if (i < items.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  }
+}
+```
+
+---
+
+## 六、收藏状态管理 (src/hooks/use-favorites.ts)
+
+\`\`\`typescript
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import type { FavoriteState } from '@/types/wallpaper';
+
+const STORAGE_KEY = 'wallpaper-favorites';
+
+// 收藏状态管理 Hook
+export function useFavorites() {
+  const [favorites, setFavorites] = useState<FavoriteState>({});
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // 从 localStorage 加载收藏状态
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setFavorites(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('Failed to load favorites:', error);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // 保存到 localStorage
+  useEffect(() => {
+    if (isLoaded) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
+      } catch (error) {
+        console.error('Failed to save favorites:', error);
+      }
+    }
+  }, [favorites, isLoaded]);
+
+  // 切换收藏状态
+  const toggleFavorite = useCallback((id: string) => {
+    setFavorites(prev => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  }, []);
+
+  // 添加收藏
+  const addFavorite = useCallback((id: string) => {
+    setFavorites(prev => ({
+      ...prev,
+      [id]: true,
+    }));
+  }, []);
+
+  // 移除收藏
+  const removeFavorite = useCallback((id: string) => {
+    setFavorites(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
+  // 检查是否已收藏
+  const isFavorite = useCallback((id: string): boolean => {
+    return !!favorites[id];
+  }, [favorites]);
+
+  // 获取所有收藏的 ID 列表
+  const getFavoriteIds = useCallback((): string[] => {
+    return Object.keys(favorites).filter(id => favorites[id]);
+  }, [favorites]);
+
+  // 获取收藏数量
+  const favoriteCount = Object.values(favorites).filter(Boolean).length;
+
+  // 清空所有收藏
+  const clearFavorites = useCallback(() => {
+    setFavorites({});
+  }, []);
+
+  return {
+    favorites,
+    isLoaded,
+    toggleFavorite,
+    addFavorite,
+    removeFavorite,
+    isFavorite,
+    getFavoriteIds,
+    favoriteCount,
+    clearFavorites,
+  };
+}
+```
+
+---
+
+## 七、下载历史管理 (src/hooks/use-download-history.ts)
+
+\`\`\`typescript
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import type { Wallpaper } from '@/types/wallpaper';
+
+const STORAGE_KEY = 'downloaded-wallpapers';
+
+interface DownloadHistoryItem {
+  wallpaper: Wallpaper;
+  downloadedAt: string;
+}
+
+export function useDownloadHistory() {
+  const [downloadHistory, setDownloadHistory] = useState<DownloadHistoryItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // 从 localStorage 加载
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setDownloadHistory(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error('Failed to load download history:', e);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // 保存到 localStorage
+  const saveToStorage = useCallback((history: DownloadHistoryItem[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    } catch (e) {
+      console.error('Failed to save download history:', e);
+    }
+  }, []);
+
+  // 添加下载记录
+  const addDownload = useCallback((wallpaper: Wallpaper) => {
+    setDownloadHistory((prev) => {
+      // 检查是否已存在
+      const exists = prev.some((item) => item.wallpaper.id === wallpaper.id);
+      if (exists) {
+        // 更新下载时间，移到最前面
+        const filtered = prev.filter((item) => item.wallpaper.id !== wallpaper.id);
+        const newHistory = [{ wallpaper, downloadedAt: new Date().toISOString() }, ...filtered];
+        saveToStorage(newHistory);
+        return newHistory;
+      }
+      const newHistory = [{ wallpaper, downloadedAt: new Date().toISOString() }, ...prev];
+      saveToStorage(newHistory);
+      return newHistory;
+    });
+  }, [saveToStorage]);
+
+  // 移除下载记录
+  const removeDownload = useCallback((wallpaperId: string) => {
+    setDownloadHistory((prev) => {
+      const newHistory = prev.filter((item) => item.wallpaper.id !== wallpaperId);
+      saveToStorage(newHistory);
+      return newHistory;
+    });
+  }, [saveToStorage]);
+
+  // 清空所有下载记录
+  const clearHistory = useCallback(() => {
+    setDownloadHistory([]);
+    saveToStorage([]);
+  }, [saveToStorage]);
+
+  // 检查是否已下载
+  const isDownloaded = useCallback((wallpaperId: string) => {
+    return downloadHistory.some((item) => item.wallpaper.id === wallpaperId);
+  }, [downloadHistory]);
+
+  return {
+    downloadHistory,
+    isLoaded,
+    addDownload,
+    removeDownload,
+    clearHistory,
+    isDownloaded,
+  };
+}
+```
+
+---
+
+## 八、侧边栏组件 (src/components/Sidebar.tsx)
+
+\`\`\`tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import {
+  Home,
+  Shuffle,
+  Heart,
+  Download,
+  RefreshCw,
+  Sun,
+  Moon,
+  Globe,
+  MoreHorizontal,
+  Info,
+} from 'lucide-react';
+import { wallpapers } from '@/lib/wallpaper-data';
+
+interface SidebarProps {
+  searchInputRef?: React.RefObject<HTMLDivElement | null>;
+}
+
+// Tooltip 组件定义在组件外部
+function TooltipItem({ 
+  text, 
+  children, 
+  tooltip, 
+  setTooltip 
+}: { 
+  text: string; 
+  children: React.ReactNode;
+  tooltip: string | null;
+  setTooltip: (t: string | null) => void;
+}) {
+  return (
+    <div
+      className="relative flex items-center justify-center"
+      onMouseEnter={() => setTooltip(text)}
+      onMouseLeave={() => setTooltip(null)}
+    >
+      {children}
+      {tooltip === text && (
+        <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md whitespace-nowrap shadow-md z-50">
+          {text}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Sidebar({ searchInputRef }: SidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [tooltip, setTooltip] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    setIsDark(document.documentElement.classList.contains('dark'));
+  }, []);
+
+  const toggleTheme = () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    document.documentElement.classList.toggle('dark', newIsDark);
+    localStorage.setItem('theme', newIsDark ? 'dark' : 'light');
+  };
+
+  const handleRandomWallpaper = () => {
+    const randomIndex = Math.floor(Math.random() * wallpapers.length);
+    const randomWallpaper = wallpapers[randomIndex];
+    router.push(`/wallpaper/${randomWallpaper.id}`);
+  };
+
+  const handleRefresh = () => {
+    router.refresh();
+  };
+
+  const isActive = (path: string) => {
+    if (path === '/') return pathname === '/';
+    return pathname.startsWith(path);
+  };
+
+  const iconClass = (active: boolean) =>
+    `w-5 h-5 transition-colors duration-200 ${active ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`;
+
+  return (
+    <>
+      {/* 桌面端侧边栏 */}
+      <aside className="hidden md:flex fixed left-0 top-0 h-full w-16 flex-col items-center py-4 bg-background/80 backdrop-blur-md border-r border-border z-40">
+        {/* Logo */}
+        <div className="mb-6">
+          <Link href="/" className="text-xl font-bold text-primary">
+            🖼️
+          </Link>
+        </div>
+
+        {/* 主要图标 */}
+        <nav className="flex flex-col items-center space-y-1 flex-1">
+          <TooltipItem text="首页" tooltip={tooltip} setTooltip={setTooltip}>
+            <Link
+              href="/"
+              className={`p-3 rounded-lg transition-colors ${isActive('/') ? 'bg-muted' : 'hover:bg-muted/50'}`}
+            >
+              <Home className={iconClass(isActive('/'))} />
+            </Link>
+          </TooltipItem>
+
+          <TooltipItem text="随机壁纸" tooltip={tooltip} setTooltip={setTooltip}>
+            <button
+              onClick={handleRandomWallpaper}
+              className="p-3 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <Shuffle className={iconClass(false)} />
+            </button>
+          </TooltipItem>
+
+          <TooltipItem text="收藏夹" tooltip={tooltip} setTooltip={setTooltip}>
+            <Link
+              href="/favorites"
+              className={`p-3 rounded-lg transition-colors ${isActive('/favorites') ? 'bg-muted' : 'hover:bg-muted/50'}`}
+            >
+              <Heart className={iconClass(isActive('/favorites'))} />
+            </Link>
+          </TooltipItem>
+
+          <TooltipItem text="下载历史" tooltip={tooltip} setTooltip={setTooltip}>
+            <Link
+              href="/downloads"
+              className={`p-3 rounded-lg transition-colors ${isActive('/downloads') ? 'bg-muted' : 'hover:bg-muted/50'}`}
+            >
+              <Download className={iconClass(isActive('/downloads'))} />
+            </Link>
+          </TooltipItem>
+
+          <TooltipItem text="刷新" tooltip={tooltip} setTooltip={setTooltip}>
+            <button
+              onClick={handleRefresh}
+              className="p-3 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <RefreshCw className={iconClass(false)} />
+            </button>
+          </TooltipItem>
+        </nav>
+
+        {/* 分隔线 */}
+        <div className="w-8 h-px bg-border my-2" />
+
+        {/* 底部图标 */}
+        <div className="flex flex-col items-center space-y-1">
+          <TooltipItem text={isDark ? '浅色模式' : '深色模式'} tooltip={tooltip} setTooltip={setTooltip}>
+            <button
+              onClick={toggleTheme}
+              className="p-3 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              {mounted && (isDark ? <Sun className={iconClass(false)} /> : <Moon className={iconClass(false)} />)}
+            </button>
+          </TooltipItem>
+
+          <TooltipItem text="语言切换" tooltip={tooltip} setTooltip={setTooltip}>
+            <button className="p-3 rounded-lg hover:bg-muted/50 transition-colors">
+              <Globe className={iconClass(false)} />
+            </button>
+          </TooltipItem>
+
+          <div className="relative">
+            <TooltipItem text="更多" tooltip={tooltip} setTooltip={setTooltip}>
+              <button
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className="p-3 rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                <MoreHorizontal className={iconClass(false)} />
+              </button>
+            </TooltipItem>
+
+            {/* 更多菜单 */}
+            {showMoreMenu && (
+              <div className="absolute left-full ml-2 top-0 bg-popover border border-border rounded-lg shadow-lg py-1 min-w-[120px] z-50">
+                <button
+                  onClick={() => setShowMoreMenu(false)}
+                  className="w-full px-3 py-2 text-sm text-popover-foreground hover:bg-muted flex items-center gap-2"
+                >
+                  <Info className="w-4 h-4" />
+                  关于
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* 移动端底部 Tab 栏 */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background/90 backdrop-blur-md border-t border-border z-40">
+        <div className="flex items-center justify-around h-full">
+          <Link
+            href="/"
+            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 ${isActive('/') ? 'text-primary' : 'text-muted-foreground'}`}
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-[10px]">首页</span>
+          </Link>
+
+          <button
+            onClick={handleRandomWallpaper}
+            className="flex flex-col items-center justify-center gap-1 px-4 py-2 text-muted-foreground"
+          >
+            <Shuffle className="w-5 h-5" />
+            <span className="text-[10px]">随机</span>
+          </button>
+
+          <Link
+            href="/favorites"
+            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 ${isActive('/favorites') ? 'text-primary' : 'text-muted-foreground'}`}
+          >
+            <Heart className="w-5 h-5" />
+            <span className="text-[10px]">收藏</span>
+          </Link>
+
+          <Link
+            href="/downloads"
+            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 ${isActive('/downloads') ? 'text-primary' : 'text-muted-foreground'}`}
+          >
+            <Download className="w-5 h-5" />
+            <span className="text-[10px]">下载</span>
+          </Link>
+        </div>
+      </nav>
+    </>
+  );
+}
+```
+
+---
+
+## 九、首页 (src/app/page.tsx)
+
+\`\`\`tsx
+'use client';
+
+import { useState, useMemo, useRef } from 'react';
+import Link from 'next/link';
+import { Search, Heart, Download, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useFavorites } from '@/hooks/use-favorites';
+import {
+  wallpapers,
+  categories,
+  getPopularWallpapers,
+  getLatestWallpapers,
+  searchWallpapers,
+} from '@/lib/wallpaper-data';
+import { downloadImage } from '@/lib/download';
+import type { WallpaperCategory } from '@/types/wallpaper';
+import Sidebar from '@/components/Sidebar';
+
+// Footer 组件
+function Footer() {
+  return (
+    <footer className="border-t border-border/10 bg-background/50">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="text-center space-y-1">
+          <p className="text-muted-foreground text-sm">
+            壁紙畫廊 · AI精选高质量壁纸
+          </p>
+          <p className="text-muted-foreground/60 text-xs">
+            © 2026 壁紙畫廊 All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// 导航栏组件（移除深色模式按钮）
+function Navbar({
+  favoriteCount,
+  onSearchClick,
+}: {
+  favoriteCount: number;
+  onSearchClick: () => void;
+}) {
+  return (
+    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/10 transition-all duration-300">
+      <div className="flex-1 h-14 flex items-center justify-between px-4">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-medium text-foreground">壁纸画廊</span>
+        </Link>
+
+        {/* 右侧操作 */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full w-9 h-9"
+            onClick={onSearchClick}
+          >
+            <Search className="w-4 h-4 text-muted-foreground" />
+          </Button>
+          <Link href="/favorites">
+            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 relative">
+              <Heart className="w-4 h-4 text-muted-foreground" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
+                  {favoriteCount > 9 ? '9+' : favoriteCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// AI 搜索框组件
+function AISearchBar({
+  searchQuery,
+  onSearchChange,
+  searchRef,
+}: {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  searchRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div ref={searchRef} className="max-w-2xl mx-auto px-4 py-8">
+      <div className="text-center mb-6">
+        <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+          发现你的下一张壁纸
+        </h1>
+        <p className="text-base text-muted-foreground">
+          AI精选高质量壁纸 · 每日更新
+        </p>
+      </div>
+      <div className="relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <Search className="w-5 h-5 text-muted-foreground" />
+        </div>
+        <Input
+          type="text"
+          placeholder="搜索你想要的壁纸..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-12 pl-14 pr-6 text-base rounded-xl bg-card border-border/50 shadow-sm focus:shadow-md transition-shadow"
+        />
+      </div>
+    </div>
+  );
+}
+
+// 分类标签栏组件
+function CategoryTabs({
+  activeCategory,
+  onCategoryChange,
+}: {
+  activeCategory: WallpaperCategory;
+  onCategoryChange: (category: WallpaperCategory) => void;
+}) {
+  return (
+    <div className="sticky top-14 md:top-14 z-20 bg-background/80 backdrop-blur-md border-b border-border/10">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center gap-1.5 py-3 overflow-x-auto scrollbar-hide">
+          {categories.map((category) => (
+            <Button
+              key={category.id}
+              variant={activeCategory === category.id ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onCategoryChange(category.id)}
+              className={`rounded-full px-3 h-8 text-sm whitespace-nowrap transition-all ${
+                activeCategory === category.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              {category.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 壁纸卡片组件 - Unsplash风格
+function WallpaperCard({
+  wallpaper,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  wallpaper: (typeof wallpapers)[0];
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`, wallpaper);
+  };
+
+  return (
+    <Link
+      href={`/wallpaper/${wallpaper.id}`}
+      className="masonry-item block"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative overflow-hidden rounded-lg bg-muted/30">
+        {/* 骨架/模糊占位 */}
+        {!isLoaded && (
+          <div className="absolute inset-0 bg-muted animate-pulse" />
+        )}
+        
+        {/* 图片 - 按原始比例展示 */}
+        <img
+          src={wallpaper.thumbnailUrl}
+          alt={wallpaper.title}
+          loading="lazy"
+          onLoad={() => setIsLoaded(true)}
+          className={`w-full h-auto object-cover rounded-lg transition-all duration-500 ${
+            isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
+          } ${
+            isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
+          }`}
+        />
+
+        {/* Hover 遮罩 - 黑色半透明 */}
+        <div
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 rounded-lg ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {/* 右上角操作按钮 */}
+          <div className="absolute top-2 right-2 flex items-center gap-1.5">
+            <button
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                isFavorite 
+                  ? 'bg-white text-destructive' 
+                  : 'bg-white/90 text-foreground hover:bg-white'
+              }`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+            </button>
+            <button
+              className="w-8 h-8 rounded-full bg-white/90 text-foreground hover:bg-white flex items-center justify-center transition-all duration-200"
+              onClick={handleDownload}
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* 收藏标记（非hover时显示） */}
+        {isFavorite && !isHovered && (
+          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center">
+            <Heart className="w-3 h-3 text-destructive fill-current" />
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+// 瀑布流网格组件
+function WallpaperGrid({
+  wallpapers: wallpapersList,
+  favorites,
+  onToggleFavorite,
+}: {
+  wallpapers: typeof wallpapers;
+  favorites: Record<string, boolean>;
+  onToggleFavorite: (id: string) => void;
+}) {
+  return (
+    <div className="masonry-grid max-w-7xl mx-auto px-4">
+      {wallpapersList.map((wallpaper) => (
+        <WallpaperCard
+          key={wallpaper.id}
+          wallpaper={wallpaper}
+          isFavorite={!!favorites[wallpaper.id]}
+          onToggleFavorite={() => onToggleFavorite(wallpaper.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+// 主页面
+export default function HomePage() {
+  const [activeCategory, setActiveCategory] = useState<WallpaperCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchRef = useRef<HTMLDivElement>(null);
+  const { favorites, toggleFavorite, favoriteCount } = useFavorites();
+
+  // 滚动到搜索框
+  const scrollToSearch = () => {
+    searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  // 根据分类和搜索过滤壁纸
+  const filteredWallpapers = useMemo(() => {
+    // 先根据搜索词筛选
+    let result = searchQuery.trim()
+      ? searchWallpapers(searchQuery)
+      : wallpapers;
+
+    // 再根据分类筛选（热门和最新需要特殊处理）
+    if (activeCategory === 'popular') {
+      result = searchQuery.trim()
+        ? getPopularWallpapers().filter((w) =>
+            result.some((r) => r.id === w.id)
+          )
+        : getPopularWallpapers();
+    } else if (activeCategory === 'latest') {
+      result = searchQuery.trim()
+        ? getLatestWallpapers().filter((w) =>
+            result.some((r) => r.id === w.id)
+          )
+        : getLatestWallpapers();
+    } else if (activeCategory !== 'all') {
+      result = result.filter((w) => w.category === activeCategory);
+    }
+
+    return result;
+  }, [activeCategory, searchQuery]);
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Sidebar searchInputRef={searchRef} />
+      
+      {/* 移动端顶部导航 */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-12 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-4">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
+          </div>
+          <span className="font-medium text-sm text-foreground">壁纸画廊</span>
+        </Link>
+      </header>
+
+      <main className="flex-1 md:ml-16 pt-14 md:pt-0">
+        <Navbar favoriteCount={favoriteCount} onSearchClick={scrollToSearch} />
+        <div className="flex-1">
+          <AISearchBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchRef={searchRef}
+          />
+          <CategoryTabs
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+          />
+          <div className="py-6 pb-20 md:pb-6">
+            <WallpaperGrid
+              wallpapers={filteredWallpapers}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
+            />
+            {/* 已展示全部提示 */}
+            <div className="text-center py-10 text-muted-foreground text-sm">
+              已展示全部 {filteredWallpapers.length} 张壁纸
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+```
+
+---
+
+## 十、壁纸详情页 (src/app/wallpaper/[id]/page.tsx)
+
+\`\`\`tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ArrowLeft, Heart, Download, Share2, Search, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  getWallpaperById,
+  getSimilarWallpapers,
+  formatResolution,
+  formatNumber,
+} from '@/lib/wallpaper-data';
+import { useFavorites } from '@/hooks/use-favorites';
+import { downloadImage } from '@/lib/download';
+import Sidebar from '@/components/Sidebar';
+
+// Footer 组件
+function Footer() {
+  return (
+    <footer className="border-t border-border/20 bg-background/50">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground text-sm">
+            壁紙畫廊 · AI精选高质量壁纸
+          </p>
+          <p className="text-muted-foreground/60 text-xs">
+            © 2026 壁紙畫廊 All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// 导航栏组件（移除深色模式按钮）
+function Navbar({ favoriteCount }: { favoriteCount: number }) {
+  return (
+    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/20 transition-all duration-300">
+      <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <span className="font-semibold text-lg text-foreground">壁纸画廊</span>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Search className="w-5 h-5 text-muted-foreground" />
+            </Button>
+          </Link>
+          <Link href="/favorites">
+            <Button variant="ghost" size="icon" className="rounded-full relative">
+              <Heart className="w-5 h-5 text-muted-foreground" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
+                  {favoriteCount > 9 ? '9+' : favoriteCount}
+                </span>
+              )}
