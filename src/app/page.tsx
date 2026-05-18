@@ -198,8 +198,8 @@ function WallpaperCard({
             <button
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
                 isFavorite 
-                  ? 'bg-white text-destructive' 
-                  : 'bg-white/90 text-foreground hover:bg-white'
+                  ? 'bg-red-500 text-white' 
+                  : 'bg-white/80 text-white hover:text-red-500 hover:bg-white/90'
               }`}
               onClick={(e) => {
                 e.preventDefault();
@@ -220,8 +220,8 @@ function WallpaperCard({
 
         {/* 收藏标记（非hover时显示） */}
         {isFavorite && !isHovered && (
-          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center">
-            <Heart className="w-3 h-3 text-destructive fill-current" />
+          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+            <Heart className="w-3 h-3 text-white fill-current" />
           </div>
         )}
       </div>

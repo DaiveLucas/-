@@ -335,7 +335,11 @@ export default function WallpaperDetailPage() {
               {/* 操作按钮 */}
               <div className="space-y-3">
                 <Button
-                  className="w-full gap-2"
+                  className={`w-full gap-2 ${
+                    isFavorite(wallpaper.id) 
+                      ? 'bg-red-500 hover:bg-red-600 text-white' 
+                      : ''
+                  }`}
                   onClick={() => toggleFavorite(wallpaper.id)}
                 >
                   <Heart
@@ -343,7 +347,7 @@ export default function WallpaperDetailPage() {
                       isFavorite(wallpaper.id) ? 'fill-current' : ''
                     }`}
                   />
-                  {isFavorite(wallpaper.id) ? '已收藏' : '收藏壁纸'}
+                  {isFavorite(wallpaper.id) ? '已收藏 ❤️' : '收藏壁纸'}
                 </Button>
                 <Button
                   variant="outline"
