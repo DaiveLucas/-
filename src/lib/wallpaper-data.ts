@@ -280,3 +280,97 @@ export function formatNumber(num: number | undefined): string {
   }
   return num.toLocaleString();
 }
+
+// ==================== 无限滚动分页生成 ====================
+
+// 图片高度比例配置（实现差异化瀑布流）
+const heightRatios = [
+  { width: 600, height: 320, label: '超宽横图' },   // 16:9 宽幅
+  { width: 600, height: 380, label: '宽幅横图' },   // 宽幅
+  { width: 600, height: 450, label: '标准横图' },   // 4:3 标准
+  { width: 600, height: 600, label: '正方形' },     // 1:1 正方形
+  { width: 600, height: 720, label: '竖向图' },     // 5:6 竖向
+  { width: 600, height: 800, label: '长竖图' },     // 3:4 竖向
+  { width: 600, height: 900, label: '超长竖图' },   // 2:3 竖向
+  { width: 600, height: 1000, label: '极长竖图' },  // 超长
+];
+
+// 分类列表（用于随机分配）
+const categoryPool: WallpaperCategory[] = ['anime', 'landscape', 'healing', 'cyberpunk', 'minimalist', 'space', 'abstract'];
+
+// 标签池（按分类）
+const tagsPool: Record<WallpaperCategory, string[]> = {
+  all: ['全部', '精选', '推荐', '热门'],
+  popular: ['热门', '受欢迎', '高下载', '精选'],
+  latest: ['最新', '新上线', '近期', '新鲜'],
+  anime: ['动漫', '唯美', '梦幻', '少女', '治愈', '二次元'],
+  landscape: ['自然风景', '山川', '海洋', '森林', '日落', '湖泊'],
+  healing: ['治愈系', '温馨', '舒适', '宁静', '柔和', '清新'],
+  cyberpunk: ['赛博朋克', '霓虹', '未来', '城市', '科技', '科幻'],
+  minimalist: ['极简', '简约', '纯净', '留白', '几何', '线条'],
+  space: ['太空', '星空', '宇宙', '星云', '银河', '行星'],
+  abstract: ['抽象', '艺术', '渐变', '色彩', '几何', '流体'],
+};
+
+// 壁纸标题模板
+const titleTemplates = [
+  '静谧时光', '晨曦微光', '暮色温柔', '星河璀璨', '云端漫步',
+  '光影交织', '梦幻之境', '远方呼唤', '心灵归宿', '自然低语',
+  '城市脉动', '霓虹闪烁', '星空物语', '森林秘境', '海浪轻语',
+  '山间云海', '落日余晖', '极光之夜', '银河倾泻', '月球背面',
+];
+
+// 生成随机壁纸数据
+export function generateWallpaperPage(page: number): Wallpaper[] {
+  const startId = page * 16 + 1;
+  const result: Wallpaper[] = [];
+  
+  for (let i = 0; i < 16; i++) {
+    const id = startId + i;
+    // 使用不同的 picsum ID，确保图片不同
+    // picsum.photos 支持 ID 范围很大，我们用 id * 7 来增加多样性
+    const picsumId = (id * 7) % 1000 + 1;
+    
+    // 随机选择高度比例
+    const ratio = heightRatios[Math.floor(Math.random() * heightRatios.length)];
+    
+    // 随机选择分类
+    const category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
+    
+    // 随机选择 2-3 个标签
+    const availableTags = tagsPool[category];
+    const tagCount = 2 + Math.floor(Math.random() * 2);
+    const tags = availableTags
+      .sort(() => Math.random() - 0.5)
+      .slice(0, tagCount);
+    
+    // 随机标题
+    const title = titleTemplates[Math.floor(Math.random() * titleTemplates.length)];
+    
+    // 随机浏览量和下载量
+    const views = Math.floor(Math.random() * 20000) + 1000;
+    const downloads = Math.floor(Math.random() * 5000) + 500;
+    
+    // 生成日期（越新的页码日期越近）
+    const daysAgo = Math.floor(Math.random() * 30) + (page * 2);
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    const createdAt = date.toISOString().split('T')[0];
+    
+    result.push({
+      id: `page${page}-${i + 1}`,
+      title: `${title} #${id}`,
+      imageUrl: `https://picsum.photos/id/${picsumId}/1920/1280`,
+      thumbnailUrl: `https://picsum.photos/id/${picsumId}/${ratio.width}/${ratio.height}`,
+      category,
+      tags,
+      resolution: { width: 1920, height: 1280 },
+      source: 'Picsum',
+      views,
+      downloads,
+      createdAt,
+    });
+  }
+  
+  return result;
+}

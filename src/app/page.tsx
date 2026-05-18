@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, Heart, Download, Sparkles } from 'lucide-react';
+import { Search, Heart, Download, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFavorites } from '@/hooks/use-favorites';
@@ -12,16 +12,17 @@ import {
   getPopularWallpapers,
   getLatestWallpapers,
   searchWallpapers,
+  generateWallpaperPage,
 } from '@/lib/wallpaper-data';
 import { downloadImage } from '@/lib/download';
-import type { WallpaperCategory } from '@/types/wallpaper';
+import type { WallpaperCategory, Wallpaper } from '@/types/wallpaper';
 import Sidebar from '@/components/Sidebar';
 
 // Footer 组件
 function Footer() {
   return (
     <footer className="border-t border-border/10 bg-background/50">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="w-full px-3 py-6">
         <div className="text-center space-y-1">
           <p className="text-muted-foreground text-sm">
             壁紙畫廊 · AI精选高质量壁纸
@@ -45,7 +46,7 @@ function Navbar({
 }) {
   return (
     <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/10 transition-all duration-300">
-      <div className="flex-1 h-14 flex items-center justify-between px-4">
+      <div className="flex-1 h-14 flex items-center justify-between px-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
@@ -80,8 +81,8 @@ function Navbar({
   );
 }
 
-// AI 搜索框组件
-function AISearchBar({
+// 精简搜索框组件 - 紧凑设计
+function SearchBar({
   searchQuery,
   onSearchChange,
   searchRef,
@@ -91,25 +92,17 @@ function AISearchBar({
   searchRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
-    <div ref={searchRef} className="max-w-2xl mx-auto px-4 py-8">
-      <div className="text-center mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-          发现你的下一张壁纸
-        </h1>
-        <p className="text-base text-muted-foreground">
-          AI精选高质量壁纸 · 每日更新
-        </p>
-      </div>
-      <div className="relative">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-          <Search className="w-5 h-5 text-muted-foreground" />
+    <div ref={searchRef} className="w-full px-3 pt-3 pb-2">
+      <div className="relative max-w-md mx-auto">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2">
+          <Search className="w-4 h-4 text-muted-foreground" />
         </div>
         <Input
           type="text"
-          placeholder="搜索你想要的壁纸..."
+          placeholder="搜索壁纸..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="h-12 pl-14 pr-6 text-base rounded-xl bg-card border-border/50 shadow-sm focus:shadow-md transition-shadow"
+          className="h-10 pl-10 pr-4 text-sm rounded-lg bg-card/50 border-border/30 focus:bg-card focus:border-border/50 transition-all"
         />
       </div>
     </div>
@@ -126,15 +119,15 @@ function CategoryTabs({
 }) {
   return (
     <div className="sticky top-14 md:top-14 z-20 bg-background/80 backdrop-blur-md border-b border-border/10">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center gap-1.5 py-3 overflow-x-auto scrollbar-hide">
+      <div className="w-full px-3">
+        <div className="flex items-center gap-1.5 py-2.5 overflow-x-auto scrollbar-hide">
           {categories.map((category) => (
             <Button
               key={category.id}
               variant={activeCategory === category.id ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onCategoryChange(category.id)}
-              className={`rounded-full px-3 h-8 text-sm whitespace-nowrap transition-all ${
+              className={`rounded-full px-3 h-7 text-xs whitespace-nowrap transition-all ${
                 activeCategory === category.id
                   ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-muted'
@@ -155,7 +148,7 @@ function WallpaperCard({
   isFavorite,
   onToggleFavorite,
 }: {
-  wallpaper: (typeof wallpapers)[0];
+  wallpaper: Wallpaper;
   isFavorite: boolean;
   onToggleFavorite: () => void;
 }) {
@@ -236,26 +229,12 @@ function WallpaperCard({
   );
 }
 
-// 瀑布流网格组件
-function WallpaperGrid({
-  wallpapers: wallpapersList,
-  favorites,
-  onToggleFavorite,
-}: {
-  wallpapers: typeof wallpapers;
-  favorites: Record<string, boolean>;
-  onToggleFavorite: (id: string) => void;
-}) {
+// 加载动画组件
+function LoadingSpinner() {
   return (
-    <div className="masonry-grid max-w-7xl mx-auto px-4">
-      {wallpapersList.map((wallpaper) => (
-        <WallpaperCard
-          key={wallpaper.id}
-          wallpaper={wallpaper}
-          isFavorite={!!favorites[wallpaper.id]}
-          onToggleFavorite={() => onToggleFavorite(wallpaper.id)}
-        />
-      ))}
+    <div className="flex items-center justify-center py-8">
+      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      <span className="ml-2 text-sm text-muted-foreground">加载更多...</span>
     </div>
   );
 }
@@ -266,6 +245,62 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef<HTMLDivElement>(null);
   const { favorites, toggleFavorite, favoriteCount } = useFavorites();
+  
+  // 无限滚动状态
+  const [page, setPage] = useState(1);
+  const [allWallpapers, setAllWallpapers] = useState<Wallpaper[]>(wallpapers);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // 加载更多壁纸
+  const loadMore = useCallback(async () => {
+    if (isLoading || !hasMore) return;
+    
+    setIsLoading(true);
+    
+    // 模拟网络延迟
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    
+    const nextPage = page + 1;
+    const newWallpapers = generateWallpaperPage(nextPage);
+    
+    if (newWallpapers.length === 0) {
+      setHasMore(false);
+    } else {
+      setAllWallpapers((prev) => [...prev, ...newWallpapers]);
+      setPage(nextPage);
+    }
+    
+    setIsLoading(false);
+  }, [page, isLoading, hasMore]);
+
+  // 设置 IntersectionObserver
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoading && hasMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+
+    if (sentinelRef.current) {
+      observerRef.current.observe(sentinelRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loadMore, isLoading, hasMore]);
 
   // 滚动到搜索框
   const scrollToSearch = () => {
@@ -277,7 +312,7 @@ export default function HomePage() {
     // 先根据搜索词筛选
     let result = searchQuery.trim()
       ? searchWallpapers(searchQuery)
-      : wallpapers;
+      : allWallpapers;
 
     // 再根据分类筛选（热门和最新需要特殊处理）
     if (activeCategory === 'popular') {
@@ -297,14 +332,14 @@ export default function HomePage() {
     }
 
     return result;
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, allWallpapers]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Sidebar searchInputRef={searchRef} />
       
       {/* 移动端顶部导航 */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-12 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-4">
+      <header className="md:hidden fixed top-0 left-0 right-0 h-12 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-3">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
@@ -316,7 +351,8 @@ export default function HomePage() {
       <main className="flex-1 md:ml-16 pt-14 md:pt-0">
         <Navbar favoriteCount={favoriteCount} onSearchClick={scrollToSearch} />
         <div className="flex-1">
-          <AISearchBar
+          {/* 精简搜索框 - 紧贴分类栏上方 */}
+          <SearchBar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             searchRef={searchRef}
@@ -325,16 +361,38 @@ export default function HomePage() {
             activeCategory={activeCategory}
             onCategoryChange={setActiveCategory}
           />
-          <div className="py-6 pb-20 md:pb-6">
-            <WallpaperGrid
-              wallpapers={filteredWallpapers}
-              favorites={favorites}
-              onToggleFavorite={toggleFavorite}
-            />
-            {/* 已展示全部提示 */}
-            <div className="text-center py-10 text-muted-foreground text-sm">
-              已展示全部 {filteredWallpapers.length} 张壁纸
+          <div className="py-3 pb-20 md:pb-6">
+            {/* 瀑布流网格 - 固定3列 */}
+            <div className="masonry-grid w-full px-3">
+              {filteredWallpapers.map((wallpaper) => (
+                <WallpaperCard
+                  key={wallpaper.id}
+                  wallpaper={wallpaper}
+                  isFavorite={!!favorites[wallpaper.id]}
+                  onToggleFavorite={() => toggleFavorite(wallpaper.id)}
+                />
+              ))}
             </div>
+            
+            {/* 无限滚动哨兵元素 */}
+            {!searchQuery && activeCategory === 'all' && (
+              <>
+                <div ref={sentinelRef} className="h-4" />
+                {isLoading && <LoadingSpinner />}
+                {!hasMore && (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    已加载全部壁纸
+                  </div>
+                )}
+              </>
+            )}
+            
+            {/* 筛选模式下的提示 */}
+            {(searchQuery || activeCategory !== 'all') && (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                已展示 {filteredWallpapers.length} 张壁纸
+              </div>
+            )}
           </div>
         </div>
       </main>
