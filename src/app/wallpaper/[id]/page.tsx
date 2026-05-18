@@ -17,58 +17,8 @@ import {
 import { useFavorites } from '@/hooks/use-favorites';
 import { downloadImage } from '@/lib/download';
 import Sidebar from '@/components/Sidebar';
-
-// Footer 组件
-function Footer() {
-  return (
-    <footer className="border-t border-border/20 bg-background/50">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="text-center space-y-2">
-          <p className="text-muted-foreground text-sm">
-            壁紙畫廊 · AI精选高质量壁纸
-          </p>
-          <p className="text-muted-foreground/60 text-xs">
-            © 2026 壁紙畫廊 All rights reserved.
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-// 导航栏组件（移除深色模式按钮）
-function Navbar({ favoriteCount }: { favoriteCount: number }) {
-  return (
-    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/20 transition-all duration-300">
-      <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-semibold text-lg text-foreground">壁纸画廊</span>
-        </Link>
-
-        <div className="flex items-center gap-3">
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Search className="w-5 h-5 text-muted-foreground" />
-            </Button>
-          </Link>
-          <Link href="/favorites">
-            <Button variant="ghost" size="icon" className="rounded-full relative">
-              <Heart className="w-5 h-5 text-muted-foreground" />
-              {favoriteCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
-                  {favoriteCount > 9 ? '9+' : favoriteCount}
-                </span>
-              )}
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
+import { Footer } from '@/components/Footer';
+import { Navbar } from '@/components/Navbar';
 
 // 全屏预览组件
 function FullscreenPreview({
@@ -79,6 +29,7 @@ function FullscreenPreview({
   onPrev,
   hasNext,
   hasPrev,
+  defaultDesktopRatio = false,
 }: {
   wallpaper: typeof wallpapers[0];
   isOpen: boolean;
@@ -87,8 +38,9 @@ function FullscreenPreview({
   onPrev: () => void;
   hasNext: boolean;
   hasPrev: boolean;
+  defaultDesktopRatio?: boolean;
 }) {
-  const [isDesktopRatio, setIsDesktopRatio] = useState(false);
+  const [isDesktopRatio, setIsDesktopRatio] = useState(defaultDesktopRatio);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   // 重置加载状态当壁纸改变时
@@ -223,6 +175,7 @@ export default function WallpaperDetailPage() {
 
   // 全屏预览状态
   const [showFullscreen, setShowFullscreen] = useState(false);
+  const [fullscreenDefaultRatio, setFullscreenDefaultRatio] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -309,7 +262,7 @@ export default function WallpaperDetailPage() {
             {/* 大图区域 - 渐进式加载 */}
             <div className="lg:col-span-2">
               <div className="relative rounded-2xl overflow-hidden shadow-float bg-muted">
-                {/* 缩略图（模糊占位） */}
+                {/* 缩略图（模糊占位）- 始终占据空间 */}
                 <img
                   src={wallpaper.thumbnailUrl}
                   alt={wallpaper.title}
@@ -320,14 +273,14 @@ export default function WallpaperDetailPage() {
                     transition: 'filter 0.5s ease-out, opacity 0.5s ease-out',
                   }}
                 />
-                {/* 原图 */}
+                {/* 原图 - 始终绝对定位覆盖 */}
                 <img
                   src={wallpaper.imageUrl}
                   alt={wallpaper.title}
                   className="w-full h-auto object-cover"
                   style={{
                     opacity: imageLoaded ? 1 : 0,
-                    position: imageLoaded ? 'relative' : 'absolute',
+                    position: 'absolute',
                     inset: 0,
                     transition: 'opacity 0.5s ease-out',
                   }}
@@ -408,7 +361,10 @@ export default function WallpaperDetailPage() {
                 <Button
                   variant="outline"
                   className="w-full gap-2"
-                  onClick={() => setShowFullscreen(true)}
+                  onClick={() => {
+                    setShowFullscreen(true);
+                    setFullscreenDefaultRatio(false);
+                  }}
                 >
                   <Maximize2 className="w-4 h-4" />
                   全屏预览
@@ -416,7 +372,10 @@ export default function WallpaperDetailPage() {
                 <Button
                   variant="outline"
                   className="w-full gap-2"
-                  onClick={() => setShowFullscreen(true)}
+                  onClick={() => {
+                    setShowFullscreen(true);
+                    setFullscreenDefaultRatio(true);
+                  }}
                 >
                   <Monitor className="w-4 h-4" />
                   设为桌面比例
@@ -440,12 +399,11 @@ export default function WallpaperDetailPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                 {similarWallpapers.map((item) => (
                   <Link key={item.id} href={`/wallpaper/${item.id}`}>
-                    <div className="relative rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300 aspect-[3/4] bg-muted group">
-                      <Image
+                    <div className="relative rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300 bg-muted group">
+                      <img
                         src={item.thumbnailUrl}
                         alt={item.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <Button
@@ -480,6 +438,7 @@ export default function WallpaperDetailPage() {
         onPrev={handlePrev}
         hasNext={currentIndex < allWallpaperIds.length - 1}
         hasPrev={currentIndex > 0}
+        defaultDesktopRatio={fullscreenDefaultRatio}
       />
     </div>
   );

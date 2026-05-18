@@ -17,24 +17,7 @@ import {
 import { downloadImage } from '@/lib/download';
 import type { WallpaperCategory, Wallpaper } from '@/types/wallpaper';
 import Sidebar from '@/components/Sidebar';
-
-// Footer 组件
-function Footer() {
-  return (
-    <footer className="border-t border-border/10 bg-background/50">
-      <div className="w-full px-3 py-6">
-        <div className="text-center space-y-1">
-          <p className="text-muted-foreground text-sm">
-            壁紙畫廊 · AI精选高质量壁纸
-          </p>
-          <p className="text-muted-foreground/60 text-xs">
-            © 2026 壁紙畫廊 All rights reserved.
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
-}
+import { Footer } from '@/components/Footer';
 
 // 导航栏组件（移除深色模式按钮）
 function Navbar({
@@ -314,9 +297,9 @@ export default function HomePage() {
 
   // 根据分类和搜索过滤壁纸
   const filteredWallpapers = useMemo(() => {
-    // 先根据搜索词筛选
+    // 先根据搜索词筛选（传入动态壁纸列表）
     let result = searchQuery.trim()
-      ? searchWallpapers(searchQuery)
+      ? searchWallpapers(searchQuery, allWallpapers)
       : allWallpapers;
 
     // 再根据分类筛选（热门和最新需要特殊处理）

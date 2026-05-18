@@ -266,11 +266,12 @@ export function getLatestWallpapers(): Wallpaper[] {
 }
 
 // 搜索壁纸（匹配标题和标签，不区分大小写）
-export function searchWallpapers(query: string): Wallpaper[] {
+export function searchWallpapers(query: string, allWallpapers?: Wallpaper[]): Wallpaper[] {
+  const targetList = allWallpapers || wallpapers;
   const lowerQuery = query.toLowerCase().trim();
-  if (!lowerQuery) return wallpapers;
+  if (!lowerQuery) return targetList;
   
-  return wallpapers.filter((w) => {
+  return targetList.filter((w) => {
     const titleMatch = w.title.toLowerCase().includes(lowerQuery);
     const tagMatch = w.tags.some((tag) => tag.toLowerCase().includes(lowerQuery));
     return titleMatch || tagMatch;
