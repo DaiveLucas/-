@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Heart, Download, Share2, Moon, Sun, Sparkles } from 'lucide-react';
@@ -46,8 +46,6 @@ function DetailNavbar() {
     </header>
   );
 }
-
-import { useState } from 'react';
 
 // 详情页主体
 export default function WallpaperDetailPage({
