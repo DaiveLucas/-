@@ -1,7 +1,7 @@
 // 壁纸分类
 export type WallpaperCategory =
   | 'all'
-  | 'hot'
+  | 'popular'
   | 'latest'
   | 'anime'
   | 'landscape'

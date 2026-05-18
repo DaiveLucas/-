@@ -3,7 +3,7 @@ import type { Wallpaper, CategoryConfig, WallpaperCategory } from '@/types/wallp
 // 分类配置
 export const categories: CategoryConfig[] = [
   { id: 'all', label: '全部' },
-  { id: 'hot', label: '热门' },
+  { id: 'popular', label: '热门' },
   { id: 'latest', label: '最新' },
   { id: 'anime', label: '动漫' },
   { id: 'landscape', label: '风景' },
@@ -237,6 +237,28 @@ export function getWallpapersByCategory(category: string): Wallpaper[] {
   return wallpapers.filter((w) => w.category === category);
 }
 
+// 获取热门壁纸（按下载量排序）
+export function getPopularWallpapers(): Wallpaper[] {
+  return [...wallpapers].sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0));
+}
+
+// 获取最新壁纸（按 id 倒序，id 越大越新）
+export function getLatestWallpapers(): Wallpaper[] {
+  return [...wallpapers].sort((a, b) => parseInt(b.id) - parseInt(a.id));
+}
+
+// 搜索壁纸（匹配标题和标签，不区分大小写）
+export function searchWallpapers(query: string): Wallpaper[] {
+  const lowerQuery = query.toLowerCase().trim();
+  if (!lowerQuery) return wallpapers;
+  
+  return wallpapers.filter((w) => {
+    const titleMatch = w.title.toLowerCase().includes(lowerQuery);
+    const tagMatch = w.tags.some((tag) => tag.toLowerCase().includes(lowerQuery));
+    return titleMatch || tagMatch;
+  });
+}
+
 // 获取相似壁纸（同分类，排除自身）
 export function getSimilarWallpapers(wallpaper: Wallpaper, limit: number = 6): Wallpaper[] {
   return wallpapers
@@ -250,7 +272,8 @@ export function formatResolution(resolution: { width: number; height: number }):
 }
 
 // 格式化数字（如浏览量）
-export function formatNumber(num: number): string {
+export function formatNumber(num: number | undefined): string {
+  if (num === undefined) return '0';
   if (num >= 10000) {
     return `${(num / 10000).toFixed(1)}万`;
   }

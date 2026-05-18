@@ -1,19 +1,56 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Moon, Sun, Heart, Download, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useFavorites } from '@/hooks/use-favorites';
-import { wallpapers, categories, getWallpapersByCategory, formatNumber } from '@/lib/wallpaper-data';
+import {
+  wallpapers,
+  categories,
+  getWallpapersByCategory,
+  getPopularWallpapers,
+  getLatestWallpapers,
+  searchWallpapers,
+  formatNumber,
+} from '@/lib/wallpaper-data';
+import { downloadImage } from '@/lib/download';
 import type { WallpaperCategory } from '@/types/wallpaper';
 
+// Footer 组件
+function Footer() {
+  return (
+    <footer className="border-t border-border/20 bg-background/50">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground text-sm">
+            壁紙畫廊 · AI精选高质量壁纸
+          </p>
+          <p className="text-muted-foreground/60 text-xs">
+            © 2026 壁紙畫廊 All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 // 导航栏组件
-function Navbar({ favoriteCount }: { favoriteCount: number }) {
+function Navbar({
+  favoriteCount,
+  onSearchClick,
+}: {
+  favoriteCount: number;
+  onSearchClick: () => void;
+}) {
   const [isDark, setIsDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -33,16 +70,28 @@ function Navbar({ favoriteCount }: { favoriteCount: number }) {
 
         {/* 右侧操作 */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={onSearchClick}
+          >
             <Search className="w-5 h-5 text-muted-foreground" />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleTheme}>
-            {isDark ? (
-              <Sun className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <Moon className="w-5 h-5 text-muted-foreground" />
-            )}
-          </Button>
+          {mounted && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={toggleTheme}
+            >
+              {isDark ? (
+                <Sun className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <Moon className="w-5 h-5 text-muted-foreground" />
+              )}
+            </Button>
+          )}
           <Link href="/favorites">
             <Button variant="ghost" size="icon" className="rounded-full relative">
               <Heart className="w-5 h-5 text-muted-foreground" />
@@ -60,19 +109,17 @@ function Navbar({ favoriteCount }: { favoriteCount: number }) {
 }
 
 // AI 搜索框组件
-function AISearchBar() {
-  const [query, setQuery] = useState('');
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      // TODO: 实现 AI 搜索
-      console.log('AI Search:', query);
-    }
-  };
-
+function AISearchBar({
+  searchQuery,
+  onSearchChange,
+  searchRef,
+}: {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  searchRef: React.RefObject<HTMLDivElement | null>;
+}) {
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div ref={searchRef} className="max-w-2xl mx-auto px-6 py-12">
       <div className="text-center mb-8">
         <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
           发现你的下一张壁纸
@@ -81,21 +128,19 @@ function AISearchBar() {
           AI精选高质量壁纸 · 每日更新
         </p>
       </div>
-      <form onSubmit={handleSearch}>
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <Search className="w-5 h-5 text-muted-foreground" />
-            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-          </div>
-          <Input
-            type="text"
-            placeholder="搜索你想要的壁纸..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-14 pl-14 pr-6 text-lg rounded-2xl bg-card border-border shadow-card focus:shadow-float transition-shadow"
-          />
+      <div className="relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <Search className="w-5 h-5 text-muted-foreground" />
+          <Sparkles className="w-4 h-4 text-primary animate-pulse" />
         </div>
-      </form>
+        <Input
+          type="text"
+          placeholder="搜索你想要的壁纸..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-14 pl-14 pr-6 text-lg rounded-2xl bg-card border-border shadow-card focus:shadow-float transition-shadow"
+        />
+      </div>
     </div>
   );
 }
@@ -139,17 +184,16 @@ function WallpaperCard({
   isFavorite,
   onToggleFavorite,
 }: {
-  wallpaper: typeof wallpapers[0];
+  wallpaper: (typeof wallpapers)[0];
   isFavorite: boolean;
   onToggleFavorite: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const handleDownload = (e: React.MouseEvent) => {
+  const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // TODO: 实现下载功能
-    window.open(wallpaper.imageUrl, '_blank');
+    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`);
   };
 
   return (
@@ -251,36 +295,54 @@ function WallpaperGrid({
   );
 }
 
-// 加载更多按钮
-function LoadMoreButton() {
-  return (
-    <div className="flex justify-center py-12">
-      <Button
-        variant="outline"
-        size="lg"
-        className="rounded-full px-8 border-border hover:bg-muted"
-      >
-        加载更多
-      </Button>
-    </div>
-  );
-}
-
 // 主页面
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<WallpaperCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchRef = useRef<HTMLDivElement>(null);
   const { favorites, toggleFavorite, favoriteCount } = useFavorites();
 
-  // 根据分类过滤壁纸
+  // 滚动到搜索框
+  const scrollToSearch = () => {
+    searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  // 根据分类和搜索过滤壁纸
   const filteredWallpapers = useMemo(() => {
-    return getWallpapersByCategory(activeCategory);
-  }, [activeCategory]);
+    // 先根据搜索词筛选
+    let result = searchQuery.trim()
+      ? searchWallpapers(searchQuery)
+      : wallpapers;
+
+    // 再根据分类筛选（热门和最新需要特殊处理）
+    if (activeCategory === 'popular') {
+      result = searchQuery.trim()
+        ? getPopularWallpapers().filter((w) =>
+            result.some((r) => r.id === w.id)
+          )
+        : getPopularWallpapers();
+    } else if (activeCategory === 'latest') {
+      result = searchQuery.trim()
+        ? getLatestWallpapers().filter((w) =>
+            result.some((r) => r.id === w.id)
+          )
+        : getLatestWallpapers();
+    } else if (activeCategory !== 'all') {
+      result = result.filter((w) => w.category === activeCategory);
+    }
+
+    return result;
+  }, [activeCategory, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar favoriteCount={favoriteCount} />
-      <main>
-        <AISearchBar />
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar favoriteCount={favoriteCount} onSearchClick={scrollToSearch} />
+      <main className="flex-1">
+        <AISearchBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchRef={searchRef}
+        />
         <CategoryTabs
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
@@ -291,9 +353,13 @@ export default function HomePage() {
             favorites={favorites}
             onToggleFavorite={toggleFavorite}
           />
+          {/* 已展示全部提示 */}
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            已展示全部壁纸
+          </div>
         </div>
-        <LoadMoreButton />
       </main>
+      <Footer />
     </div>
   );
 }
