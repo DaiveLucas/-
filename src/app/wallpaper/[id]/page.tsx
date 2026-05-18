@@ -252,10 +252,10 @@ export default function WallpaperDetailPage() {
           <Button
             variant="ghost"
             className="mb-6 gap-2"
-            onClick={() => router.push('/')}
+            onClick={() => router.back()}
           >
             <ArrowLeft className="w-4 h-4" />
-            返回首页
+            返回
           </Button>
 
           <div className="grid lg:grid-cols-3 gap-8">
