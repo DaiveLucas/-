@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Inspector } from 'react-dev-inspector';
 import './globals.css';
 
@@ -42,12 +43,14 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `try{if(localStorage.getItem("theme")==="dark"||(!localStorage.getItem("theme")&&window.matchMedia("(prefers-color-scheme:dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}`,
-        }}
-      />
       <body className={`antialiased`}>
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem("theme")==="dark"||(!localStorage.getItem("theme")&&window.matchMedia("(prefers-color-scheme:dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}`,
+          }}
+        />
         {isDev && <Inspector />}
         {children}
       </body>
