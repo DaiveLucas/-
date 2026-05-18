@@ -15,12 +15,13 @@ export const categories: CategoryConfig[] = [
 ];
 
 // Mock 壁纸数据（使用 picsum.photos 稳定图片服务）
+// 注意：thumbnailUrl 使用不同高度比例，实现真正的瀑布流效果
 export const wallpapers: Wallpaper[] = [
   {
     id: '1',
     title: '雪山日出',
     imageUrl: 'https://picsum.photos/id/15/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/15/600/400',
+    thumbnailUrl: 'https://picsum.photos/id/15/600/400', // 3:2 横向
     category: 'landscape',
     tags: ['自然风景', '山川', '日出'],
     resolution: { width: 1920, height: 1280 },
@@ -33,7 +34,7 @@ export const wallpapers: Wallpaper[] = [
     id: '2',
     title: '动漫风格',
     imageUrl: 'https://picsum.photos/id/65/1920/1080',
-    thumbnailUrl: 'https://picsum.photos/id/65/600/338',
+    thumbnailUrl: 'https://picsum.photos/id/65/600/750', // 4:5 竖向
     category: 'anime',
     tags: ['动漫', '唯美', '梦幻'],
     resolution: { width: 1920, height: 1080 },
@@ -46,7 +47,7 @@ export const wallpapers: Wallpaper[] = [
     id: '3',
     title: '霓虹城市',
     imageUrl: 'https://picsum.photos/id/32/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/32/600/400',
+    thumbnailUrl: 'https://picsum.photos/id/32/600/900', // 2:3 竖向
     category: 'cyberpunk',
     tags: ['赛博朋克', '霓虹', '城市'],
     resolution: { width: 1920, height: 1280 },
@@ -59,7 +60,7 @@ export const wallpapers: Wallpaper[] = [
     id: '4',
     title: '极简建筑',
     imageUrl: 'https://picsum.photos/id/57/1920/1080',
-    thumbnailUrl: 'https://picsum.photos/id/57/600/338',
+    thumbnailUrl: 'https://picsum.photos/id/57/600/600', // 1:1 正方形
     category: 'minimalist',
     tags: ['极简', '建筑', '纯净'],
     resolution: { width: 1920, height: 1080 },
@@ -72,7 +73,7 @@ export const wallpapers: Wallpaper[] = [
     id: '5',
     title: '治愈森林',
     imageUrl: 'https://picsum.photos/id/16/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/16/600/400',
+    thumbnailUrl: 'https://picsum.photos/id/16/600/800', // 3:4 竖向
     category: 'healing',
     tags: ['治愈系', '森林', '自然'],
     resolution: { width: 1920, height: 1280 },
@@ -85,7 +86,7 @@ export const wallpapers: Wallpaper[] = [
     id: '6',
     title: '璀璨星空',
     imageUrl: 'https://picsum.photos/id/26/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/26/600/400',
+    thumbnailUrl: 'https://picsum.photos/id/26/600/350', // 宽幅横向
     category: 'space',
     tags: ['太空', '星空', '宇宙'],
     resolution: { width: 1920, height: 1280 },
@@ -98,7 +99,7 @@ export const wallpapers: Wallpaper[] = [
     id: '7',
     title: '抽象艺术',
     imageUrl: 'https://picsum.photos/id/49/1920/1080',
-    thumbnailUrl: 'https://picsum.photos/id/49/600/338',
+    thumbnailUrl: 'https://picsum.photos/id/49/600/850', // 竖向长图
     category: 'abstract',
     tags: ['抽象', '艺术', '色彩'],
     resolution: { width: 1920, height: 1080 },
@@ -111,7 +112,7 @@ export const wallpapers: Wallpaper[] = [
     id: '8',
     title: '海浪沙滩',
     imageUrl: 'https://picsum.photos/id/10/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/10/600/400',
+    thumbnailUrl: 'https://picsum.photos/id/10/600/500', // 6:5 接近正方形
     category: 'landscape',
     tags: ['自然风景', '大海', '沙滩'],
     resolution: { width: 1920, height: 1280 },
@@ -124,7 +125,7 @@ export const wallpapers: Wallpaper[] = [
     id: '9',
     title: '银河星云',
     imageUrl: 'https://picsum.photos/id/27/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/27/600/400',
+    thumbnailUrl: 'https://picsum.photos/id/27/600/700', // 接近正方形偏竖
     category: 'space',
     tags: ['太空', '银河', '星云'],
     resolution: { width: 1920, height: 1280 },
@@ -137,7 +138,7 @@ export const wallpapers: Wallpaper[] = [
     id: '10',
     title: '城市夜景',
     imageUrl: 'https://picsum.photos/id/37/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/37/600/400',
+    thumbnailUrl: 'https://picsum.photos/id/37/600/380', // 宽幅
     category: 'cyberpunk',
     tags: ['赛博朋克', '城市', '夜景'],
     resolution: { width: 1920, height: 1280 },
@@ -150,7 +151,7 @@ export const wallpapers: Wallpaper[] = [
     id: '11',
     title: '梦幻花海',
     imageUrl: 'https://picsum.photos/id/23/1920/1080',
-    thumbnailUrl: 'https://picsum.photos/id/23/600/338',
+    thumbnailUrl: 'https://picsum.photos/id/23/600/950', // 长竖图
     category: 'healing',
     tags: ['治愈系', '花海', '梦幻'],
     resolution: { width: 1920, height: 1080 },
@@ -163,7 +164,7 @@ export const wallpapers: Wallpaper[] = [
     id: '12',
     title: '极简线条',
     imageUrl: 'https://picsum.photos/id/28/1920/1080',
-    thumbnailUrl: 'https://picsum.photos/id/28/600/338',
+    thumbnailUrl: 'https://picsum.photos/id/28/600/550', // 接近正方形
     category: 'minimalist',
     tags: ['极简', '线条', '几何'],
     resolution: { width: 1920, height: 1080 },
@@ -176,7 +177,7 @@ export const wallpapers: Wallpaper[] = [
     id: '13',
     title: '山川湖泊',
     imageUrl: 'https://picsum.photos/id/14/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/14/600/400',
+    thumbnailUrl: 'https://picsum.photos/id/14/600/320', // 超宽幅
     category: 'landscape',
     tags: ['自然风景', '山川', '湖泊'],
     resolution: { width: 1920, height: 1280 },
@@ -189,7 +190,7 @@ export const wallpapers: Wallpaper[] = [
     id: '14',
     title: '动漫风景',
     imageUrl: 'https://picsum.photos/id/48/1920/1080',
-    thumbnailUrl: 'https://picsum.photos/id/48/600/338',
+    thumbnailUrl: 'https://picsum.photos/id/48/600/720', // 竖向
     category: 'anime',
     tags: ['动漫', '风景', '唯美'],
     resolution: { width: 1920, height: 1080 },
@@ -202,7 +203,7 @@ export const wallpapers: Wallpaper[] = [
     id: '15',
     title: '抽象光影',
     imageUrl: 'https://picsum.photos/id/43/1920/1080',
-    thumbnailUrl: 'https://picsum.photos/id/43/600/338',
+    thumbnailUrl: 'https://picsum.photos/id/43/600/650', // 接近正方形
     category: 'abstract',
     tags: ['抽象', '光影', '艺术'],
     resolution: { width: 1920, height: 1080 },
@@ -215,7 +216,7 @@ export const wallpapers: Wallpaper[] = [
     id: '16',
     title: '未来城市',
     imageUrl: 'https://picsum.photos/id/42/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/42/600/400',
+    thumbnailUrl: 'https://picsum.photos/id/42/600/1000', // 长竖图
     category: 'cyberpunk',
     tags: ['赛博朋克', '未来', '城市'],
     resolution: { width: 1920, height: 1280 },
