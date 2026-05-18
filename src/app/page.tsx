@@ -204,18 +204,14 @@ function WallpaperCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative overflow-hidden rounded-xl bg-muted shadow-card group-hover:shadow-float transition-all duration-300">
-        {/* 图片 */}
-        <div className="relative aspect-[3/4] overflow-hidden">
-          <Image
-            src={wallpaper.thumbnailUrl}
-            alt={wallpaper.title}
-            fill
-            className={`object-cover transition-transform duration-500 ${
-              isHovered ? 'scale-105' : 'scale-100'
-            }`}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          />
-        </div>
+        {/* 图片 - 使用 img 标签让图片按原始比例自然撑开，实现真正的瀑布流 */}
+        <img
+          src={wallpaper.thumbnailUrl}
+          alt={wallpaper.title}
+          className={`w-full h-auto object-cover transition-transform duration-500 ${
+            isHovered ? 'scale-105' : 'scale-100'
+          }`}
+        />
 
         {/* Hover 遮罩 */}
         <div

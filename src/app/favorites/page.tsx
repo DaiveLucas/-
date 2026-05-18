@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Heart, Download, Trash2, Search, Moon, Sun, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { wallpapers } from '@/lib/wallpaper-data';
@@ -159,11 +158,10 @@ export default function FavoritesPage() {
               {favoriteWallpapers.map((wallpaper) => (
                 <div key={wallpaper.id} className="masonry-item group">
                   <div className="relative rounded-2xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300 bg-muted">
-                    <Image
+                    {/* 使用 img 标签让图片按原始比例自然撑开，实现真正的瀑布流 */}
+                    <img
                       src={wallpaper.thumbnailUrl}
                       alt={wallpaper.title}
-                      width={600}
-                      height={800}
                       className="w-full h-auto object-cover"
                     />
                     {/* 右上角收藏标记 */}
