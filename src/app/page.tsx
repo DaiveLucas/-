@@ -2,22 +2,20 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Search, Moon, Sun, Heart, Download, Sparkles } from 'lucide-react';
+import { Search, Heart, Download, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFavorites } from '@/hooks/use-favorites';
 import {
   wallpapers,
   categories,
-  getWallpapersByCategory,
   getPopularWallpapers,
   getLatestWallpapers,
   searchWallpapers,
-  formatNumber,
 } from '@/lib/wallpaper-data';
 import { downloadImage } from '@/lib/download';
 import type { WallpaperCategory } from '@/types/wallpaper';
+import Sidebar from '@/components/Sidebar';
 
 // Footer 组件
 function Footer() {
@@ -37,7 +35,7 @@ function Footer() {
   );
 }
 
-// 导航栏组件
+// 导航栏组件（移除深色模式按钮）
 function Navbar({
   favoriteCount,
   onSearchClick,
@@ -45,21 +43,9 @@ function Navbar({
   favoriteCount: number;
   onSearchClick: () => void;
 }) {
-  const [isDark, setIsDark] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
-  };
-
   return (
-    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/20 transition-all duration-300">
-      <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
+    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/20 transition-all duration-300">
+      <div className="flex-1 h-16 flex items-center justify-between px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -78,20 +64,6 @@ function Navbar({
           >
             <Search className="w-5 h-5 text-muted-foreground" />
           </Button>
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={toggleTheme}
-            >
-              {isDark ? (
-                <Sun className="w-5 h-5 text-muted-foreground" />
-              ) : (
-                <Moon className="w-5 h-5 text-muted-foreground" />
-              )}
-            </Button>
-          )}
           <Link href="/favorites">
             <Button variant="ghost" size="icon" className="rounded-full relative">
               <Heart className="w-5 h-5 text-muted-foreground" />
@@ -154,7 +126,7 @@ function CategoryTabs({
   onCategoryChange: (category: WallpaperCategory) => void;
 }) {
   return (
-    <div className="sticky top-16 z-30 bg-background/80 backdrop-blur-md border-b border-border/20">
+    <div className="sticky top-16 md:top-16 z-20 bg-background/80 backdrop-blur-md border-b border-border/20">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center gap-2 py-4 overflow-x-auto scrollbar-hide">
           {categories.map((category) => (
@@ -193,7 +165,7 @@ function WallpaperCard({
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`);
+    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`, wallpaper);
   };
 
   return (
@@ -332,26 +304,40 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navbar favoriteCount={favoriteCount} onSearchClick={scrollToSearch} />
-      <main className="flex-1">
-        <AISearchBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchRef={searchRef}
-        />
-        <CategoryTabs
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-        />
-        <div className="py-8">
-          <WallpaperGrid
-            wallpapers={filteredWallpapers}
-            favorites={favorites}
-            onToggleFavorite={toggleFavorite}
+      <Sidebar searchInputRef={searchRef} />
+      
+      {/* 移动端顶部导航 */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-4">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-semibold text-foreground">壁纸画廊</span>
+        </Link>
+      </header>
+
+      <main className="flex-1 md:ml-16 pt-16 md:pt-0">
+        <Navbar favoriteCount={favoriteCount} onSearchClick={scrollToSearch} />
+        <div className="flex-1">
+          <AISearchBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchRef={searchRef}
           />
-          {/* 已展示全部提示 */}
-          <div className="text-center py-12 text-muted-foreground text-sm">
-            已展示全部壁纸
+          <CategoryTabs
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+          />
+          <div className="py-8 pb-20 md:pb-8">
+            <WallpaperGrid
+              wallpapers={filteredWallpapers}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
+            />
+            {/* 已展示全部提示 */}
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              已展示全部 {filteredWallpapers.length} 张壁纸
+            </div>
           </div>
         </div>
       </main>

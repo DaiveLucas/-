@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Heart, Download, Share2, Moon, Sun, Search, Sparkles } from 'lucide-react';
+import { ArrowLeft, Heart, Download, Share2, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -15,6 +15,7 @@ import {
 } from '@/lib/wallpaper-data';
 import { useFavorites } from '@/hooks/use-favorites';
 import { downloadImage } from '@/lib/download';
+import Sidebar from '@/components/Sidebar';
 
 // Footer 组件
 function Footer() {
@@ -34,22 +35,10 @@ function Footer() {
   );
 }
 
-// 导航栏组件
+// 导航栏组件（移除深色模式按钮）
 function Navbar({ favoriteCount }: { favoriteCount: number }) {
-  const [isDark, setIsDark] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
-  };
-
   return (
-    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/20 transition-all duration-300">
+    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/20 transition-all duration-300">
       <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -64,20 +53,6 @@ function Navbar({ favoriteCount }: { favoriteCount: number }) {
               <Search className="w-5 h-5 text-muted-foreground" />
             </Button>
           </Link>
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={toggleTheme}
-            >
-              {isDark ? (
-                <Sun className="w-5 h-5 text-muted-foreground" />
-              ) : (
-                <Moon className="w-5 h-5 text-muted-foreground" />
-              )}
-            </Button>
-          )}
           <Link href="/favorites">
             <Button variant="ghost" size="icon" className="rounded-full relative">
               <Heart className="w-5 h-5 text-muted-foreground" />
@@ -114,7 +89,7 @@ export default function WallpaperDetailPage() {
   }
 
   const handleDownload = async () => {
-    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`);
+    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`, wallpaper);
   };
 
   const handleShare = () => {
@@ -133,138 +108,152 @@ export default function WallpaperDetailPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navbar favoriteCount={favoriteCount} />
+      <Sidebar />
+      
+      {/* 移动端顶部导航 */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-4">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-semibold text-foreground">壁纸画廊</span>
+        </Link>
+      </header>
 
-      <main className="flex-1 max-w-7xl mx-auto px-6 py-8">
-        {/* 返回按钮 */}
-        <Button
-          variant="ghost"
-          className="mb-6 gap-2"
-          onClick={() => router.push('/')}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          返回首页
-        </Button>
+      <main className="flex-1 md:ml-16 pt-16 md:pt-0">
+        <Navbar favoriteCount={favoriteCount} />
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* 大图区域 */}
-          <div className="lg:col-span-2">
-            <div className="relative rounded-2xl overflow-hidden shadow-float bg-muted">
-              <Image
-                src={wallpaper.imageUrl}
-                alt={wallpaper.title}
-                width={1200}
-                height={800}
-                className="w-full h-auto object-cover"
-                priority
-              />
+        <div className="max-w-7xl mx-auto px-6 py-8 pb-20 md:pb-8">
+          {/* 返回按钮 */}
+          <Button
+            variant="ghost"
+            className="mb-6 gap-2"
+            onClick={() => router.push('/')}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            返回首页
+          </Button>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* 大图区域 */}
+            <div className="lg:col-span-2">
+              <div className="relative rounded-2xl overflow-hidden shadow-float bg-muted">
+                <Image
+                  src={wallpaper.imageUrl}
+                  alt={wallpaper.title}
+                  width={1200}
+                  height={800}
+                  className="w-full h-auto object-cover"
+                  priority
+                />
+              </div>
+            </div>
+
+            {/* 信息面板 */}
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold mb-2">{wallpaper.title}</h1>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {wallpaper.tags.map((tag) => (
+                    <Badge key={tag} variant="outline">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>分辨率</span>
+                  <span className="text-foreground">
+                    {formatResolution(wallpaper.resolution)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>来源</span>
+                  <span className="text-foreground">{wallpaper.source}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>下载量</span>
+                  <span className="text-foreground">
+                    {formatNumber(wallpaper.downloads)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>浏览量</span>
+                  <span className="text-foreground">
+                    {formatNumber(wallpaper.views)}
+                  </span>
+                </div>
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="space-y-3">
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => toggleFavorite(wallpaper.id)}
+                >
+                  <Heart
+                    className={`w-4 h-4 ${
+                      isFavorite(wallpaper.id) ? 'fill-current' : ''
+                    }`}
+                  />
+                  {isFavorite(wallpaper.id) ? '已收藏' : '收藏壁纸'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-4 h-4" />
+                  下载原图
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={handleShare}
+                >
+                  <Share2 className="w-4 h-4" />
+                  分享
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* 信息面板 */}
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold mb-2">{wallpaper.title}</h1>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {wallpaper.tags.map((tag) => (
-                  <Badge key={tag} variant="outline">
-                    {tag}
-                  </Badge>
+          {/* 相似推荐 */}
+          {similarWallpapers.length > 0 && (
+            <section className="mt-12">
+              <h2 className="text-xl font-semibold mb-6">相似壁纸</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                {similarWallpapers.map((item) => (
+                  <Link key={item.id} href={`/wallpaper/${item.id}`}>
+                    <div className="relative rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300 aspect-[3/4] bg-muted group">
+                      <Image
+                        src={item.thumbnailUrl}
+                        alt={item.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full bg-white/80"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleSimilarDownload(item.imageUrl, item.title);
+                          }}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Link>
                 ))}
               </div>
-            </div>
-
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex justify-between">
-                <span>分辨率</span>
-                <span className="text-foreground">
-                  {formatResolution(wallpaper.resolution)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>来源</span>
-                <span className="text-foreground">{wallpaper.source}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>下载量</span>
-                <span className="text-foreground">
-                  {formatNumber(wallpaper.downloads)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>浏览量</span>
-                <span className="text-foreground">
-                  {formatNumber(wallpaper.views)}
-                </span>
-              </div>
-            </div>
-
-            {/* 操作按钮 */}
-            <div className="space-y-3">
-              <Button
-                className="w-full gap-2"
-                onClick={() => toggleFavorite(wallpaper.id)}
-              >
-                <Heart
-                  className={`w-4 h-4 ${
-                    isFavorite(wallpaper.id) ? 'fill-current' : ''
-                  }`}
-                />
-                {isFavorite(wallpaper.id) ? '已收藏' : '收藏壁纸'}
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={handleDownload}
-              >
-                <Download className="w-4 h-4" />
-                下载原图
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={handleShare}
-              >
-                <Share2 className="w-4 h-4" />
-                分享
-              </Button>
-            </div>
-          </div>
+            </section>
+          )}
         </div>
-
-        {/* 相似推荐 */}
-        {similarWallpapers.length > 0 && (
-          <section className="mt-12">
-            <h2 className="text-xl font-semibold mb-6">相似壁纸</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-              {similarWallpapers.map((item) => (
-                <Link key={item.id} href={`/wallpaper/${item.id}`}>
-                  <div className="relative rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300 aspect-[3/4] bg-muted group">
-                    <Image
-                      src={item.thumbnailUrl}
-                      alt={item.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="rounded-full bg-white/80"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleSimilarDownload(item.imageUrl, item.title);
-                        }}
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
       </main>
 
       <Footer />
