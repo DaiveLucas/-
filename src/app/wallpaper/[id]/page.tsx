@@ -259,7 +259,7 @@ export default function WallpaperDetailPage() {
           </Button>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* 大图区域 - 渐进式加载 */}
+            {/* 大图区域 - 渐进式加载，使用 mediumUrl 首屏 */}
             <div className="lg:col-span-2">
               <div className="relative rounded-2xl overflow-hidden shadow-float bg-muted">
                 {/* 缩略图（模糊占位）- 始终占据空间 */}
@@ -273,9 +273,9 @@ export default function WallpaperDetailPage() {
                     transition: 'filter 0.5s ease-out, opacity 0.5s ease-out',
                   }}
                 />
-                {/* 原图 - 始终绝对定位覆盖 */}
+                {/* 中等尺寸图 - 首屏展示，始终绝对定位覆盖 */}
                 <img
-                  src={wallpaper.imageUrl}
+                  src={wallpaper.mediumUrl || wallpaper.imageUrl}
                   alt={wallpaper.title}
                   className="w-full h-auto object-cover"
                   style={{
@@ -301,9 +301,11 @@ export default function WallpaperDetailPage() {
                 <h1 className="text-2xl font-bold mb-2">{wallpaper.title}</h1>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {wallpaper.tags.map((tag) => (
-                    <Badge key={tag} variant="outline">
-                      {tag}
-                    </Badge>
+                    <Link key={tag} href={`/tag/${encodeURIComponent(tag)}`}>
+                      <Badge variant="outline" className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
+                        {tag}
+                      </Badge>
+                    </Link>
                   ))}
                 </div>
               </div>

@@ -15,7 +15,7 @@ import {
   MoreHorizontal,
   Info,
 } from 'lucide-react';
-import { wallpapers } from '@/lib/wallpaper-data';
+import { wallpapers, getAllWallpapers } from '@/lib/wallpaper-data';
 
 interface SidebarProps {
   searchInputRef?: React.RefObject<HTMLDivElement | null>;
@@ -70,8 +70,9 @@ export default function Sidebar({ searchInputRef }: SidebarProps) {
   };
 
   const handleRandomWallpaper = () => {
-    const randomIndex = Math.floor(Math.random() * wallpapers.length);
-    const randomWallpaper = wallpapers[randomIndex];
+    const allWallpapers = getAllWallpapers();
+    const randomIndex = Math.floor(Math.random() * allWallpapers.length);
+    const randomWallpaper = allWallpapers[randomIndex];
     router.push(`/wallpaper/${randomWallpaper.id}`);
   };
 

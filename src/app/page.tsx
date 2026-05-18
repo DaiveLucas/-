@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import Link from 'next/link';
-import { Search, Heart, Download, Sparkles, Loader2 } from 'lucide-react';
+import { Search, Heart, Download, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFavorites } from '@/hooks/use-favorites';
@@ -144,11 +144,21 @@ const WallpaperCard = memo(function WallpaperCard({
     await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`, wallpaper);
   };
 
+  // hover 预加载 mediumUrl
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    // 预加载中等尺寸图片
+    if (wallpaper.mediumUrl) {
+      const img = new window.Image();
+      img.src = wallpaper.mediumUrl;
+    }
+  };
+
   return (
     <Link
       href={`/wallpaper/${wallpaper.id}`}
       className="masonry-item block"
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative overflow-hidden rounded-lg bg-muted/30">
@@ -212,12 +222,24 @@ const WallpaperCard = memo(function WallpaperCard({
   );
 });
 
-// 加载动画组件
-function LoadingSpinner() {
+// 骨架屏组件 - 替代加载转圈
+function SkeletonGrid() {
+  // 随机高度的骨架块
+  const heights = [180, 220, 260, 300, 340, 280, 200, 240];
+  
   return (
-    <div className="flex items-center justify-center py-8">
-      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      <span className="ml-2 text-sm text-muted-foreground">加载更多...</span>
+    <div className="columns-1 md:columns-3 gap-2 px-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="mb-2 break-inside-avoid"
+        >
+          <div
+            className="bg-muted/50 rounded-lg animate-pulse"
+            style={{ height: heights[i % heights.length] }}
+          />
+        </div>
+      ))}
     </div>
   );
 }
@@ -366,7 +388,7 @@ export default function HomePage() {
             {!searchQuery && activeCategory === 'all' && (
               <>
                 <div ref={sentinelRef} className="h-4" />
-                {isLoading && <LoadingSpinner />}
+                {isLoading && <SkeletonGrid />}
                 {!hasMore && (
                   <div className="text-center py-8 text-muted-foreground text-sm">
                     已加载全部壁纸

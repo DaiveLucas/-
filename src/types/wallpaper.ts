@@ -24,6 +24,7 @@ export interface Wallpaper {
   title: string;
   imageUrl: string;
   thumbnailUrl: string;
+  mediumUrl?: string; // 中等尺寸（宽800），用于详情页首屏
   category: WallpaperCategory;
   tags: string[];
   resolution: {

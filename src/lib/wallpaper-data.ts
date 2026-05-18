@@ -14,13 +14,14 @@ export const categories: CategoryConfig[] = [
   { id: 'abstract', label: '抽象' },
 ];
 
-// Mock 壁纸数据（imageUrl 和 thumbnailUrl 宽高比一致）
+// Mock 壁纸数据（三级尺寸：thumbnail 200px, medium 800px, original 1920px）
 export const wallpapers: Wallpaper[] = [
   {
     id: '1',
     title: '雪山日出',
     imageUrl: 'https://picsum.photos/id/15/1920/1280',
-    thumbnailUrl: 'https://picsum.photos/id/15/600/400', // 3:2 横向
+    thumbnailUrl: 'https://picsum.photos/id/15/200/133', // 缩略图
+    mediumUrl: 'https://picsum.photos/id/15/800/533', // 中等尺寸
     category: 'landscape',
     tags: ['自然风景', '山川', '日出'],
     resolution: { width: 1920, height: 1280 },
@@ -33,7 +34,8 @@ export const wallpapers: Wallpaper[] = [
     id: '2',
     title: '动漫风格',
     imageUrl: 'https://picsum.photos/id/65/1920/2400',
-    thumbnailUrl: 'https://picsum.photos/id/65/600/750', // 4:5 竖向
+    thumbnailUrl: 'https://picsum.photos/id/65/200/250',
+    mediumUrl: 'https://picsum.photos/id/65/800/1000',
     category: 'anime',
     tags: ['动漫', '唯美', '梦幻'],
     resolution: { width: 1920, height: 2400 },
@@ -46,7 +48,8 @@ export const wallpapers: Wallpaper[] = [
     id: '3',
     title: '霓虹城市',
     imageUrl: 'https://picsum.photos/id/32/1920/2880',
-    thumbnailUrl: 'https://picsum.photos/id/32/600/900', // 2:3 竖向
+    thumbnailUrl: 'https://picsum.photos/id/32/200/300',
+    mediumUrl: 'https://picsum.photos/id/32/800/1200',
     category: 'cyberpunk',
     tags: ['赛博朋克', '霓虹', '城市'],
     resolution: { width: 1920, height: 2880 },
@@ -59,7 +62,8 @@ export const wallpapers: Wallpaper[] = [
     id: '4',
     title: '极简建筑',
     imageUrl: 'https://picsum.photos/id/57/1920/1920',
-    thumbnailUrl: 'https://picsum.photos/id/57/600/600', // 1:1 正方形
+    thumbnailUrl: 'https://picsum.photos/id/57/200/200',
+    mediumUrl: 'https://picsum.photos/id/57/800/800',
     category: 'minimalist',
     tags: ['极简', '建筑', '纯净'],
     resolution: { width: 1920, height: 1920 },
@@ -72,7 +76,8 @@ export const wallpapers: Wallpaper[] = [
     id: '5',
     title: '治愈森林',
     imageUrl: 'https://picsum.photos/id/16/1920/2560',
-    thumbnailUrl: 'https://picsum.photos/id/16/600/800', // 3:4 竖向
+    thumbnailUrl: 'https://picsum.photos/id/16/200/267',
+    mediumUrl: 'https://picsum.photos/id/16/800/1067',
     category: 'healing',
     tags: ['治愈系', '森林', '自然'],
     resolution: { width: 1920, height: 2560 },
@@ -85,7 +90,8 @@ export const wallpapers: Wallpaper[] = [
     id: '6',
     title: '璀璨星空',
     imageUrl: 'https://picsum.photos/id/26/1920/1120',
-    thumbnailUrl: 'https://picsum.photos/id/26/600/350', // 宽幅横向 16:9
+    thumbnailUrl: 'https://picsum.photos/id/26/200/117',
+    mediumUrl: 'https://picsum.photos/id/26/800/467',
     category: 'space',
     tags: ['太空', '星空', '宇宙'],
     resolution: { width: 1920, height: 1120 },
@@ -98,7 +104,8 @@ export const wallpapers: Wallpaper[] = [
     id: '7',
     title: '抽象艺术',
     imageUrl: 'https://picsum.photos/id/49/1920/2720',
-    thumbnailUrl: 'https://picsum.photos/id/49/600/850', // 竖向长图
+    thumbnailUrl: 'https://picsum.photos/id/49/200/283',
+    mediumUrl: 'https://picsum.photos/id/49/800/1133',
     category: 'abstract',
     tags: ['抽象', '艺术', '色彩'],
     resolution: { width: 1920, height: 2720 },
@@ -111,7 +118,8 @@ export const wallpapers: Wallpaper[] = [
     id: '8',
     title: '海浪沙滩',
     imageUrl: 'https://picsum.photos/id/10/1920/1600',
-    thumbnailUrl: 'https://picsum.photos/id/10/600/500', // 6:5 接近正方形
+    thumbnailUrl: 'https://picsum.photos/id/10/200/167',
+    mediumUrl: 'https://picsum.photos/id/10/800/667',
     category: 'landscape',
     tags: ['自然风景', '大海', '沙滩'],
     resolution: { width: 1920, height: 1600 },
@@ -124,7 +132,8 @@ export const wallpapers: Wallpaper[] = [
     id: '9',
     title: '银河星云',
     imageUrl: 'https://picsum.photos/id/27/1920/2240',
-    thumbnailUrl: 'https://picsum.photos/id/27/600/700', // 接近正方形偏竖
+    thumbnailUrl: 'https://picsum.photos/id/27/200/233',
+    mediumUrl: 'https://picsum.photos/id/27/800/933',
     category: 'space',
     tags: ['太空', '银河', '星云'],
     resolution: { width: 1920, height: 2240 },
@@ -137,7 +146,8 @@ export const wallpapers: Wallpaper[] = [
     id: '10',
     title: '城市夜景',
     imageUrl: 'https://picsum.photos/id/37/1920/1216',
-    thumbnailUrl: 'https://picsum.photos/id/37/600/380', // 宽幅
+    thumbnailUrl: 'https://picsum.photos/id/37/200/127',
+    mediumUrl: 'https://picsum.photos/id/37/800/507',
     category: 'cyberpunk',
     tags: ['赛博朋克', '城市', '夜景'],
     resolution: { width: 1920, height: 1216 },
@@ -150,7 +160,8 @@ export const wallpapers: Wallpaper[] = [
     id: '11',
     title: '梦幻花海',
     imageUrl: 'https://picsum.photos/id/23/1920/3040',
-    thumbnailUrl: 'https://picsum.photos/id/23/600/950', // 长竖图
+    thumbnailUrl: 'https://picsum.photos/id/23/200/317',
+    mediumUrl: 'https://picsum.photos/id/23/800/1267',
     category: 'healing',
     tags: ['治愈系', '花海', '梦幻'],
     resolution: { width: 1920, height: 3040 },
@@ -163,7 +174,8 @@ export const wallpapers: Wallpaper[] = [
     id: '12',
     title: '极简线条',
     imageUrl: 'https://picsum.photos/id/28/1920/1760',
-    thumbnailUrl: 'https://picsum.photos/id/28/600/550', // 接近正方形
+    thumbnailUrl: 'https://picsum.photos/id/28/200/183',
+    mediumUrl: 'https://picsum.photos/id/28/800/733',
     category: 'minimalist',
     tags: ['极简', '线条', '几何'],
     resolution: { width: 1920, height: 1760 },
@@ -176,7 +188,8 @@ export const wallpapers: Wallpaper[] = [
     id: '13',
     title: '山川湖泊',
     imageUrl: 'https://picsum.photos/id/14/1920/1024',
-    thumbnailUrl: 'https://picsum.photos/id/14/600/320', // 超宽幅
+    thumbnailUrl: 'https://picsum.photos/id/14/200/107',
+    mediumUrl: 'https://picsum.photos/id/14/800/427',
     category: 'landscape',
     tags: ['自然风景', '山川', '湖泊'],
     resolution: { width: 1920, height: 1024 },
@@ -189,7 +202,8 @@ export const wallpapers: Wallpaper[] = [
     id: '14',
     title: '动漫风景',
     imageUrl: 'https://picsum.photos/id/48/1920/2304',
-    thumbnailUrl: 'https://picsum.photos/id/48/600/720', // 竖向
+    thumbnailUrl: 'https://picsum.photos/id/48/200/240',
+    mediumUrl: 'https://picsum.photos/id/48/800/960',
     category: 'anime',
     tags: ['动漫', '风景', '唯美'],
     resolution: { width: 1920, height: 2304 },
@@ -202,7 +216,8 @@ export const wallpapers: Wallpaper[] = [
     id: '15',
     title: '抽象光影',
     imageUrl: 'https://picsum.photos/id/43/1920/2080',
-    thumbnailUrl: 'https://picsum.photos/id/43/600/650', // 接近正方形
+    thumbnailUrl: 'https://picsum.photos/id/43/200/217',
+    mediumUrl: 'https://picsum.photos/id/43/800/867',
     category: 'abstract',
     tags: ['抽象', '光影', '艺术'],
     resolution: { width: 1920, height: 2080 },
@@ -215,7 +230,8 @@ export const wallpapers: Wallpaper[] = [
     id: '16',
     title: '未来城市',
     imageUrl: 'https://picsum.photos/id/42/1920/3200',
-    thumbnailUrl: 'https://picsum.photos/id/42/600/1000', // 长竖图
+    thumbnailUrl: 'https://picsum.photos/id/42/200/333',
+    mediumUrl: 'https://picsum.photos/id/42/800/1333',
     category: 'cyberpunk',
     tags: ['赛博朋克', '未来', '城市'],
     resolution: { width: 1920, height: 3200 },
@@ -249,6 +265,11 @@ export function addWallpapersToCache(wallpaperList: Wallpaper[]): void {
   wallpaperList.forEach((w) => wallpaperCache.set(w.id, w));
 }
 
+// 获取所有壁纸（静态 + 缓存），用于随机壁纸功能
+export function getAllWallpapers(): Wallpaper[] {
+  return [...wallpapers, ...Array.from(wallpaperCache.values())];
+}
+
 // 根据分类筛选壁纸
 export function getWallpapersByCategory(category: string): Wallpaper[] {
   if (category === 'all') return wallpapers;
@@ -278,6 +299,11 @@ export function searchWallpapers(query: string, allWallpapers?: Wallpaper[]): Wa
   });
 }
 
+// 按标签获取壁纸
+export function getWallpapersByTag(tag: string): Wallpaper[] {
+  return wallpapers.filter((w) => w.tags.includes(tag));
+}
+
 // 获取相似壁纸（同分类，排除自身）
 export function getSimilarWallpapers(wallpaper: Wallpaper, limit: number = 6): Wallpaper[] {
   return wallpapers
@@ -301,14 +327,14 @@ export function formatNumber(num: number | undefined): string {
 
 // ==================== 无限滚动分页生成 ====================
 
-// 图片比例配置（imageUrl 和 thumbnailUrl 比例一致）
+// 图片比例配置（三级尺寸：thumb 200px, medium 800px, full 1920px）
 const ratioConfigs = [
-  { thumbWidth: 600, thumbHeight: 320, fullWidth: 1920, fullHeight: 1024, label: '超宽横图' },   // 16:9 宽幅
-  { thumbWidth: 600, thumbHeight: 400, fullWidth: 1920, fullHeight: 1280, label: '标准横图' },   // 3:2 标准
-  { thumbWidth: 600, thumbHeight: 600, fullWidth: 1920, fullHeight: 1920, label: '正方形' },     // 1:1 正方形
-  { thumbWidth: 600, thumbHeight: 750, fullWidth: 1920, fullHeight: 2400, label: '竖向图' },     // 4:5 竖向
-  { thumbWidth: 600, thumbHeight: 900, fullWidth: 1920, fullHeight: 2880, label: '长竖图' },     // 2:3 竖向
-  { thumbWidth: 600, thumbHeight: 1000, fullWidth: 1920, fullHeight: 3200, label: '极长竖图' },  // 超长
+  { thumbWidth: 200, thumbHeight: 107, medWidth: 800, medHeight: 427, fullWidth: 1920, fullHeight: 1024, label: '超宽横图' },
+  { thumbWidth: 200, thumbHeight: 133, medWidth: 800, medHeight: 533, fullWidth: 1920, fullHeight: 1280, label: '标准横图' },
+  { thumbWidth: 200, thumbHeight: 200, medWidth: 800, medHeight: 800, fullWidth: 1920, fullHeight: 1920, label: '正方形' },
+  { thumbWidth: 200, thumbHeight: 250, medWidth: 800, medHeight: 1000, fullWidth: 1920, fullHeight: 2400, label: '竖向图' },
+  { thumbWidth: 200, thumbHeight: 300, medWidth: 800, medHeight: 1200, fullWidth: 1920, fullHeight: 2880, label: '长竖图' },
+  { thumbWidth: 200, thumbHeight: 333, medWidth: 800, medHeight: 1333, fullWidth: 1920, fullHeight: 3200, label: '极长竖图' },
 ];
 
 // 分类列表（用于随机分配）
@@ -377,6 +403,7 @@ export function generateWallpaperPage(page: number): Wallpaper[] {
       title: `${title} #${id}`,
       imageUrl: `https://picsum.photos/id/${picsumId}/${ratio.fullWidth}/${ratio.fullHeight}`,
       thumbnailUrl: `https://picsum.photos/id/${picsumId}/${ratio.thumbWidth}/${ratio.thumbHeight}`,
+      mediumUrl: `https://picsum.photos/id/${picsumId}/${ratio.medWidth}/${ratio.medHeight}`,
       category,
       tags,
       resolution: { width: ratio.fullWidth, height: ratio.fullHeight },
