@@ -22,15 +22,23 @@ export async function downloadImage(
     const blob = await response.blob();
     const blobUrl = URL.createObjectURL(blob);
 
+    // 创建隐藏的 a 标签触发下载
     const link = document.createElement('a');
     link.href = blobUrl;
     link.download = filename;
+    link.style.display = 'none';
+    
+    // 添加到 body，触发点击，然后延迟移除
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-
-    // 延迟释放 blob URL
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    
+    // 延迟移除元素和释放 blob URL，确保下载已开始
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+      if (link.parentNode) {
+        link.parentNode.removeChild(link);
+      }
+    }, 1000);
   } catch {
     // 跨域失败时，fallback 到新窗口打开
     console.warn('下载失败，改为新窗口打开');
