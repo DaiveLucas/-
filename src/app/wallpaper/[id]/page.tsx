@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Heart, Download, Share2, Search, Sparkles } from 'lucide-react';
+import { ArrowLeft, Heart, Download, Share2, Search, Sparkles, Maximize2, Monitor, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -12,6 +12,7 @@ import {
   getSimilarWallpapers,
   formatResolution,
   formatNumber,
+  wallpapers,
 } from '@/lib/wallpaper-data';
 import { useFavorites } from '@/hooks/use-favorites';
 import { downloadImage } from '@/lib/download';
@@ -69,6 +70,124 @@ function Navbar({ favoriteCount }: { favoriteCount: number }) {
   );
 }
 
+// 全屏预览组件
+function FullscreenPreview({
+  wallpaper,
+  isOpen,
+  onClose,
+  onNext,
+  onPrev,
+  hasNext,
+  hasPrev,
+}: {
+  wallpaper: typeof wallpapers[0];
+  isOpen: boolean;
+  onClose: () => void;
+  onNext: () => void;
+  onPrev: () => void;
+  hasNext: boolean;
+  hasPrev: boolean;
+}) {
+  const [isDesktopRatio, setIsDesktopRatio] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight' && hasNext) onNext();
+      if (e.key === 'ArrowLeft' && hasPrev) onPrev();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, onNext, onPrev, hasNext, hasPrev]);
+
+  const handleEnterFullscreen = async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch {
+      // 浏览器不支持全屏
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+      onClick={onClose}
+    >
+      {/* 关闭按钮 */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+      >
+        <X className="w-6 h-6 text-white" />
+      </button>
+
+      {/* 左右切换按钮 */}
+      {hasPrev && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrev();
+          }}
+          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        >
+          <ChevronLeft className="w-8 h-8 text-white" />
+        </button>
+      )}
+      {hasNext && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNext();
+          }}
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        >
+          <ChevronRight className="w-8 h-8 text-white" />
+        </button>
+      )}
+
+      {/* 图片容器 */}
+      <div
+        className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={wallpaper.imageUrl}
+          alt={wallpaper.title}
+          className={`max-w-full max-h-[90vh] object-contain transition-all duration-300 ${
+            isDesktopRatio ? 'aspect-video' : ''
+          }`}
+        />
+      </div>
+
+      {/* 底部工具栏 */}
+      <div
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={handleEnterFullscreen}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white text-sm"
+        >
+          <Maximize2 className="w-4 h-4" />
+          全屏
+        </button>
+        <button
+          onClick={() => setIsDesktopRatio(!isDesktopRatio)}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-white text-sm ${
+            isDesktopRatio ? 'bg-primary' : 'bg-white/10 hover:bg-white/20'
+          }`}
+        >
+          <Monitor className="w-4 h-4" />
+          16:9 比例
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function WallpaperDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -76,6 +195,32 @@ export default function WallpaperDetailPage() {
   const wallpaper = getWallpaperById(wallpaperId);
   const similarWallpapers = wallpaper ? getSimilarWallpapers(wallpaper) : [];
   const { isFavorite, toggleFavorite, favoriteCount } = useFavorites();
+
+  // 全屏预览状态
+  const [showFullscreen, setShowFullscreen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // 获取所有壁纸ID列表用于切换
+  const allWallpaperIds = wallpapers.map(w => w.id);
+
+  useEffect(() => {
+    if (wallpaper) {
+      const idx = allWallpaperIds.indexOf(wallpaper.id);
+      if (idx !== -1) setCurrentIndex(idx);
+    }
+  }, [wallpaper, allWallpaperIds]);
+
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      router.push(`/wallpaper/${allWallpaperIds[currentIndex - 1]}`);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < allWallpaperIds.length - 1) {
+      router.push(`/wallpaper/${allWallpaperIds[currentIndex + 1]}`);
+    }
+  };
 
   if (!wallpaper) {
     return (
@@ -211,6 +356,22 @@ export default function WallpaperDetailPage() {
                 <Button
                   variant="outline"
                   className="w-full gap-2"
+                  onClick={() => setShowFullscreen(true)}
+                >
+                  <Maximize2 className="w-4 h-4" />
+                  全屏预览
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => setShowFullscreen(true)}
+                >
+                  <Monitor className="w-4 h-4" />
+                  设为桌面比例
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
                   onClick={handleShare}
                 >
                   <Share2 className="w-4 h-4" />
@@ -257,6 +418,17 @@ export default function WallpaperDetailPage() {
       </main>
 
       <Footer />
+
+      {/* 全屏预览 */}
+      <FullscreenPreview
+        wallpaper={wallpaper}
+        isOpen={showFullscreen}
+        onClose={() => setShowFullscreen(false)}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        hasNext={currentIndex < allWallpaperIds.length - 1}
+        hasPrev={currentIndex > 0}
+      />
     </div>
   );
 }

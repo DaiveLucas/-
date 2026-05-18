@@ -119,8 +119,8 @@ function CategoryTabs({
 }) {
   return (
     <div className="sticky top-14 md:top-14 z-20 bg-background/80 backdrop-blur-md border-b border-border/10">
-      <div className="w-full px-3">
-        <div className="flex items-center gap-1.5 py-2.5 overflow-x-auto scrollbar-hide">
+      <div className="w-full px-6">
+        <div className="flex items-center justify-center gap-1.5 py-2.5 overflow-x-auto scrollbar-hide">
           {categories.map((category) => (
             <Button
               key={category.id}
@@ -363,7 +363,7 @@ export default function HomePage() {
           />
           <div className="py-3 pb-20 md:pb-6">
             {/* 瀑布流网格 - 固定3列 */}
-            <div className="masonry-grid w-full px-3">
+            <div className="masonry-grid w-full px-6 max-w-7xl mx-auto">
               {filteredWallpapers.map((wallpaper) => (
                 <WallpaperCard
                   key={wallpaper.id}
