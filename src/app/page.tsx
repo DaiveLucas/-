@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { Search, Heart, Download, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -142,8 +142,8 @@ function CategoryTabs({
   );
 }
 
-// 壁纸卡片组件 - Unsplash风格
-function WallpaperCard({
+// 壁纸卡片组件 - Unsplash风格（用memo包裹避免重新渲染）
+const WallpaperCard = memo(function WallpaperCard({
   wallpaper,
   isFavorite,
   onToggleFavorite,
@@ -227,7 +227,7 @@ function WallpaperCard({
       </div>
     </Link>
   );
-}
+});
 
 // 加载动画组件
 function LoadingSpinner() {
@@ -253,15 +253,19 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const lastLoadTimeRef = useRef(0); // 防抖时间戳
 
   // 加载更多壁纸
   const loadMore = useCallback(async () => {
-    if (isLoading || !hasMore) return;
+    // 加锁机制：正在加载 / 没有更多 / 1秒内已加载过
+    const now = Date.now();
+    if (isLoading || !hasMore || now - lastLoadTimeRef.current < 1000) return;
     
     setIsLoading(true);
+    lastLoadTimeRef.current = now;
     
     // 模拟网络延迟
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 300));
     
     const nextPage = page + 1;
     const newWallpapers = generateWallpaperPage(nextPage);
@@ -269,6 +273,7 @@ export default function HomePage() {
     if (newWallpapers.length === 0) {
       setHasMore(false);
     } else {
+      // 追加数据，不刷新页面
       setAllWallpapers((prev) => [...prev, ...newWallpapers]);
       setPage(nextPage);
     }
@@ -288,7 +293,7 @@ export default function HomePage() {
           loadMore();
         }
       },
-      { threshold: 0.1, rootMargin: '200px' }
+      { threshold: 0.1, rootMargin: '0px 0px 300px 0px' } // 提前300px触发
     );
 
     if (sentinelRef.current) {

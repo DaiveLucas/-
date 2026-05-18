@@ -199,6 +199,7 @@ export default function WallpaperDetailPage() {
   // 全屏预览状态
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // 获取所有壁纸ID列表用于切换
   const allWallpaperIds = wallpapers.map(w => w.id);
@@ -280,17 +281,32 @@ export default function WallpaperDetailPage() {
           </Button>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* 大图区域 */}
+            {/* 大图区域 - 渐进式加载 */}
             <div className="lg:col-span-2">
               <div className="relative rounded-2xl overflow-hidden shadow-float bg-muted">
-                <Image
+                {/* 缩略图（模糊占位） */}
+                <img
+                  src={wallpaper.thumbnailUrl}
+                  alt={wallpaper.title}
+                  className={`w-full h-auto object-cover transition-opacity duration-500 ${
+                    imageLoaded ? 'opacity-0 absolute inset-0' : 'opacity-100 blur-xl'
+                  }`}
+                />
+                {/* 原图 */}
+                <img
                   src={wallpaper.imageUrl}
                   alt={wallpaper.title}
-                  width={1200}
-                  height={800}
-                  className="w-full h-auto object-cover"
-                  priority
+                  className={`w-full h-auto object-cover transition-opacity duration-500 ${
+                    imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'
+                  }`}
+                  onLoad={() => setImageLoaded(true)}
                 />
+                {/* 加载指示器 */}
+                {!imageLoaded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted overflow-hidden">
+                    <div className="h-full bg-primary animate-pulse" style={{ width: '60%' }} />
+                  </div>
+                )}
               </div>
             </div>
 
