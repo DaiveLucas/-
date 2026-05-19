@@ -77,7 +77,7 @@ export default function Sidebar({ searchInputRef }: SidebarProps) {
   };
 
   const handleRefresh = () => {
-    router.refresh();
+    window.location.reload();
   };
 
   const isActive = (path: string) => {

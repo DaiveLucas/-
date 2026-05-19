@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Heart, Download, Trash2, ArrowLeft, Search, Sparkles } from 'lucide-react';
 import { useDownloadHistory } from '@/hooks/use-download-history';
 import { downloadImage } from '@/lib/download';
@@ -12,6 +13,7 @@ import { Footer } from '@/components/Footer';
 import { Navbar } from '@/components/Navbar';
 
 export default function DownloadsPage() {
+  const router = useRouter();
   const { downloadHistory, isLoaded, removeDownload, clearHistory } = useDownloadHistory();
   const { isFavorite } = useFavorites();
 
@@ -49,7 +51,7 @@ export default function DownloadsPage() {
           <Button
             variant="ghost"
             className="mb-6 gap-2"
-            onClick={() => window.location.href = '/'}
+            onClick={() => router.back()}
           >
             <ArrowLeft className="w-4 h-4" />
             返回首页

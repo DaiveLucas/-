@@ -299,9 +299,10 @@ export function searchWallpapers(query: string, allWallpapers?: Wallpaper[]): Wa
   });
 }
 
-// 按标签获取壁纸
+// 按标签获取壁纸（支持缓存）
 export function getWallpapersByTag(tag: string): Wallpaper[] {
-  return wallpapers.filter((w) => w.tags.includes(tag));
+  const allList = [...wallpapers, ...Array.from(wallpaperCache.values())];
+  return allList.filter((w) => w.tags.includes(tag));
 }
 
 // 获取相似壁纸（同分类，排除自身）

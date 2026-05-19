@@ -5,7 +5,13 @@ import { Heart, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // 导航栏组件（桌面端）
-export function Navbar({ favoriteCount }: { favoriteCount?: number }) {
+export function Navbar({
+  favoriteCount,
+  onSearchClick,
+}: {
+  favoriteCount?: number;
+  onSearchClick?: () => void;
+}) {
   return (
     <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/20 transition-all duration-300">
       <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-6">
@@ -17,11 +23,14 @@ export function Navbar({ favoriteCount }: { favoriteCount?: number }) {
         </Link>
 
         <div className="flex items-center gap-3">
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Search className="w-5 h-5 text-muted-foreground" />
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={onSearchClick}
+          >
+            <Search className="w-5 h-5 text-muted-foreground" />
+          </Button>
           {typeof favoriteCount === 'number' && (
             <Link href="/favorites">
               <Button variant="ghost" size="icon" className="rounded-full relative">

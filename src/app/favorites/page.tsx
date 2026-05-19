@@ -1,20 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Heart, Download, Trash2, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { wallpapers } from '@/lib/wallpaper-data';
+import { getWallpaperById } from '@/lib/wallpaper-data';
 import { useFavorites } from '@/hooks/use-favorites';
 import { downloadImage, downloadMultipleImages } from '@/lib/download';
 import Sidebar from '@/components/Sidebar';
 import { Footer } from '@/components/Footer';
 import { Navbar } from '@/components/Navbar';
+import type { Wallpaper } from '@/types/wallpaper';
 
 export default function FavoritesPage() {
   const { favorites, isLoaded, removeFavorite, favoriteCount } = useFavorites();
 
-  const favoriteWallpapers = wallpapers.filter((w) => favorites[w.id]);
+  // 使用 getWallpaperById 查找壁纸（支持动态壁纸缓存）
+  const favoriteWallpapers = useMemo(() => {
+    return Object.keys(favorites)
+      .filter(id => favorites[id])
+      .map(id => getWallpaperById(id))
+      .filter((w): w is Wallpaper => w !== undefined);
+  }, [favorites]);
 
   const handleDownload = async (imageUrl: string, title: string) => {
     await downloadImage(imageUrl, `${title}.jpg`);

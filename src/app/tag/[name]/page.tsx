@@ -3,45 +3,15 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Heart, Download, Sparkles } from 'lucide-react';
+import { Heart, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFavorites } from '@/hooks/use-favorites';
-import {
-  wallpapers,
-  getWallpapersByTag,
-} from '@/lib/wallpaper-data';
+import { getWallpapersByTag } from '@/lib/wallpaper-data';
 import { downloadImage } from '@/lib/download';
 import type { Wallpaper } from '@/types/wallpaper';
 import Sidebar from '@/components/Sidebar';
 import { Footer } from '@/components/Footer';
-
-// 导航栏组件
-function Navbar({ favoriteCount }: { favoriteCount: number }) {
-  return (
-    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/10 transition-all duration-300">
-      <div className="flex-1 h-14 flex items-center justify-between px-3">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-medium text-foreground">壁纸画廊</span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <Link href="/favorites">
-            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 relative">
-              <Heart className="w-4 h-4 text-muted-foreground" />
-              {favoriteCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
-                  {favoriteCount > 9 ? '9+' : favoriteCount}
-                </span>
-              )}
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
+import { Navbar } from '@/components/Navbar';
 
 // 壁纸卡片组件
 const WallpaperCard = memo(function WallpaperCard({

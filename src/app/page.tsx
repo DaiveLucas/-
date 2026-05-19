@@ -18,51 +18,11 @@ import { downloadImage } from '@/lib/download';
 import type { WallpaperCategory, Wallpaper } from '@/types/wallpaper';
 import Sidebar from '@/components/Sidebar';
 import { Footer } from '@/components/Footer';
+import { Navbar } from '@/components/Navbar';
 
-// 导航栏组件（移除深色模式按钮）
-function Navbar({
-  favoriteCount,
-  onSearchClick,
-}: {
-  favoriteCount: number;
-  onSearchClick: () => void;
-}) {
-  return (
-    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/10 transition-all duration-300">
-      <div className="flex-1 h-14 flex items-center justify-between px-3">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-medium text-foreground">壁纸画廊</span>
-        </Link>
-
-        {/* 右侧操作 */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full w-9 h-9"
-            onClick={onSearchClick}
-          >
-            <Search className="w-4 h-4 text-muted-foreground" />
-          </Button>
-          <Link href="/favorites">
-            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 relative">
-              <Heart className="w-4 h-4 text-muted-foreground" />
-              {favoriteCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
-                  {favoriteCount > 9 ? '9+' : favoriteCount}
-                </span>
-              )}
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
+// 模块级缓存 - 保持已加载的数据，避免返回首页时重新加载
+let cachedWallpapers: Wallpaper[] | null = null;
+let cachedPage = 1;
 
 // 精简搜索框组件 - 紧凑设计
 function SearchBar({
@@ -251,15 +211,23 @@ export default function HomePage() {
   const searchRef = useRef<HTMLDivElement>(null);
   const { favorites, toggleFavorite, favoriteCount } = useFavorites();
   
-  // 无限滚动状态
-  const [page, setPage] = useState(1);
-  const [allWallpapers, setAllWallpapers] = useState<Wallpaper[]>(wallpapers);
+  // 无限滚动状态 - 使用缓存初始化
+  const [page, setPage] = useState(cachedPage);
+  const [allWallpapers, setAllWallpapers] = useState<Wallpaper[]>(
+    cachedWallpapers || wallpapers
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const lastLoadTimeRef = useRef(0); // 防抖时间戳
   const isInitializedRef = useRef(false); // 标记是否已初始化
+
+  // 同步更新缓存
+  useEffect(() => {
+    cachedWallpapers = allWallpapers;
+    cachedPage = page;
+  }, [allWallpapers, page]);
 
   // 加载更多壁纸
   const loadMore = useCallback(async () => {
