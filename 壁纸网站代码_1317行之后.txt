@@ -1,0 +1,1482 @@
+# 壁纸网站代码 - 1317行之后
+
+## 文件结构概览
+- src/app/page.tsx (427行) - 首页
+- src/app/wallpaper/[id]/page.tsx (447行) - 详情页
+- src/app/favorites/page.tsx (144行) - 收藏页
+- src/app/downloads/page.tsx (163行) - 下载历史页
+- src/app/tag/[name]/page.tsx (196行) - 标签分类页
+- src/app/not-found.tsx (58行) - 404页面
+
+总计约 1,435 行代码
+
+================================================================================
+## 1. src/app/page.tsx (首页 - 瀑布流+无限滚动+搜索筛选)
+================================================================================
+
+'use client';
+
+import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
+import Link from 'next/link';
+import { Search, Heart, Download, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useFavorites } from '@/hooks/use-favorites';
+import {
+  wallpapers,
+  categories,
+  getPopularWallpapers,
+  getLatestWallpapers,
+  searchWallpapers,
+  generateWallpaperPage,
+} from '@/lib/wallpaper-data';
+import { downloadImage } from '@/lib/download';
+import type { WallpaperCategory, Wallpaper } from '@/types/wallpaper';
+import Sidebar from '@/components/Sidebar';
+import { Footer } from '@/components/Footer';
+
+// 导航栏组件（移除深色模式按钮）
+function Navbar({
+  favoriteCount,
+  onSearchClick,
+}: {
+  favoriteCount: number;
+  onSearchClick: () => void;
+}) {
+  return (
+    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/10 transition-all duration-300">
+      <div className="flex-1 h-14 flex items-center justify-between px-3">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-medium text-foreground">壁纸画廊</span>
+        </Link>
+
+        {/* 右侧操作 */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full w-9 h-9"
+            onClick={onSearchClick}
+          >
+            <Search className="w-4 h-4 text-muted-foreground" />
+          </Button>
+          <Link href="/favorites">
+            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 relative">
+              <Heart className="w-4 h-4 text-muted-foreground" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
+                  {favoriteCount > 9 ? '9+' : favoriteCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// 精简搜索框组件 - 紧凑设计
+function SearchBar({
+  searchQuery,
+  onSearchChange,
+  searchRef,
+}: {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  searchRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div ref={searchRef} className="w-full px-3 pt-3 pb-2">
+      <div className="relative max-w-md mx-auto">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2">
+          <Search className="w-4 h-4 text-muted-foreground" />
+        </div>
+        <Input
+          type="text"
+          placeholder="搜索壁纸..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-10 pl-10 pr-4 text-sm rounded-lg bg-card/50 border-border/30 focus:bg-card focus:border-border/50 transition-all"
+        />
+      </div>
+    </div>
+  );
+}
+
+// 分类标签栏组件
+function CategoryTabs({
+  activeCategory,
+  onCategoryChange,
+}: {
+  activeCategory: WallpaperCategory;
+  onCategoryChange: (category: WallpaperCategory) => void;
+}) {
+  return (
+    <div className="sticky top-14 md:top-14 z-20 bg-background/80 backdrop-blur-md border-b border-border/10">
+      <div className="w-full px-6">
+        <div className="flex items-center justify-center gap-1.5 py-2.5 overflow-x-auto scrollbar-hide">
+          {categories.map((category) => (
+            <Button
+              key={category.id}
+              variant={activeCategory === category.id ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onCategoryChange(category.id)}
+              className={`rounded-full px-3 h-7 text-xs whitespace-nowrap transition-all ${
+                activeCategory === category.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              {category.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 壁纸卡片组件 - Unsplash风格（用memo包裹避免重新渲染）
+const WallpaperCard = memo(function WallpaperCard({
+  wallpaper,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  wallpaper: Wallpaper;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`, wallpaper);
+  };
+
+  // hover 预加载 mediumUrl
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    // 预加载中等尺寸图片
+    if (wallpaper.mediumUrl) {
+      const img = new window.Image();
+      img.src = wallpaper.mediumUrl;
+    }
+  };
+
+  return (
+    <Link
+      href={`/wallpaper/${wallpaper.id}`}
+      className="masonry-item block"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative overflow-hidden rounded-lg bg-muted/30">
+        {/* 骨架/模糊占位 */}
+        {!isLoaded && (
+          <div className="absolute inset-0 bg-muted animate-pulse" />
+        )}
+        
+        {/* 图片 - 按原始比例展示 */}
+        <img
+          src={wallpaper.thumbnailUrl}
+          alt={wallpaper.title}
+          loading="lazy"
+          onLoad={() => setIsLoaded(true)}
+          className={`w-full h-auto object-cover rounded-lg transition-all duration-500 ${
+            isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
+          } ${
+            isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
+          }`}
+        />
+
+        {/* Hover 遮罩 - 黑色半透明 */}
+        <div
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 rounded-lg ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {/* 右上角操作按钮 */}
+          <div className="absolute top-2 right-2 flex items-center gap-1.5">
+            <button
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                isFavorite 
+                  ? 'bg-red-500 text-white' 
+                  : 'bg-white/80 text-white hover:text-red-500 hover:bg-white/90'
+              }`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+            </button>
+            <button
+              className="w-8 h-8 rounded-full bg-white/90 text-foreground hover:bg-white flex items-center justify-center transition-all duration-200"
+              onClick={handleDownload}
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* 收藏标记（非hover时显示） */}
+        {isFavorite && !isHovered && (
+          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+            <Heart className="w-3 h-3 text-white fill-current" />
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+});
+
+// 骨架屏组件 - 替代加载转圈
+function SkeletonGrid() {
+  // 随机高度的骨架块
+  const heights = [180, 220, 260, 300, 340, 280, 200, 240];
+  
+  return (
+    <div className="columns-1 md:columns-3 gap-2 px-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="mb-2 break-inside-avoid"
+        >
+          <div
+            className="bg-muted/50 rounded-lg animate-pulse"
+            style={{ height: heights[i % heights.length] }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 主页面
+export default function HomePage() {
+  const [activeCategory, setActiveCategory] = useState<WallpaperCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchRef = useRef<HTMLDivElement>(null);
+  const { favorites, toggleFavorite, favoriteCount } = useFavorites();
+  
+  // 无限滚动状态
+  const [page, setPage] = useState(1);
+  const [allWallpapers, setAllWallpapers] = useState<Wallpaper[]>(wallpapers);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const lastLoadTimeRef = useRef(0); // 防抖时间戳
+  const isInitializedRef = useRef(false); // 标记是否已初始化
+
+  // 加载更多壁纸
+  const loadMore = useCallback(async () => {
+    // 加锁机制：正在加载 / 没有更多 / 1秒内已加载过
+    const now = Date.now();
+    if (isLoading || !hasMore || now - lastLoadTimeRef.current < 1000) return;
+    
+    // 标记已初始化
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+    }
+    
+    setIsLoading(true);
+    lastLoadTimeRef.current = now;
+    
+    // 模拟网络延迟
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    
+    const nextPage = page + 1;
+    const newWallpapers = generateWallpaperPage(nextPage);
+    
+    if (newWallpapers.length === 0) {
+      setHasMore(false);
+    } else {
+      // 追加数据，不刷新页面
+      setAllWallpapers((prev) => [...prev, ...newWallpapers]);
+      setPage(nextPage);
+    }
+    
+    setIsLoading(false);
+  }, [page, isLoading, hasMore]);
+
+  // 设置 IntersectionObserver - 只执行一次
+  useEffect(() => {
+    // 已经有初始数据，不需要重新加载
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        // 使用 refs 获取最新值，避免依赖项变化
+        const now = Date.now();
+        if (
+          entries[0].isIntersecting &&
+          !isLoading &&
+          hasMore &&
+          now - lastLoadTimeRef.current >= 1000
+        ) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px 300px 0px' } // 提前300px触发
+    );
+
+    if (sentinelRef.current) {
+      observerRef.current.observe(sentinelRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 只在挂载时执行一次
+
+  // 滚动到搜索框
+  const scrollToSearch = () => {
+    searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  // 根据分类和搜索过滤壁纸
+  const filteredWallpapers = useMemo(() => {
+    // 先根据搜索词筛选（传入动态壁纸列表）
+    let result = searchQuery.trim()
+      ? searchWallpapers(searchQuery, allWallpapers)
+      : allWallpapers;
+
+    // 再根据分类筛选（热门和最新需要特殊处理）
+    if (activeCategory === 'popular') {
+      result = searchQuery.trim()
+        ? getPopularWallpapers().filter((w) =>
+            result.some((r) => r.id === w.id)
+          )
+        : getPopularWallpapers();
+    } else if (activeCategory === 'latest') {
+      result = searchQuery.trim()
+        ? getLatestWallpapers().filter((w) =>
+            result.some((r) => r.id === w.id)
+          )
+        : getLatestWallpapers();
+    } else if (activeCategory !== 'all') {
+      result = result.filter((w) => w.category === activeCategory);
+    }
+
+    return result;
+  }, [activeCategory, searchQuery, allWallpapers]);
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Sidebar searchInputRef={searchRef} />
+      
+      {/* 移动端顶部导航 */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-12 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-3">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
+          </div>
+          <span className="font-medium text-sm text-foreground">壁纸画廊</span>
+        </Link>
+      </header>
+
+      <main className="flex-1 md:ml-16 pt-14 md:pt-0">
+        <Navbar favoriteCount={favoriteCount} onSearchClick={scrollToSearch} />
+        <div className="flex-1">
+          {/* 精简搜索框 - 紧贴分类栏上方 */}
+          <SearchBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchRef={searchRef}
+          />
+          <CategoryTabs
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+          />
+          <div className="py-3 pb-20 md:pb-6">
+            {/* 瀑布流网格 - 固定3列 */}
+            <div className="masonry-grid w-full px-6 max-w-7xl mx-auto">
+              {filteredWallpapers.map((wallpaper) => (
+                <WallpaperCard
+                  key={wallpaper.id}
+                  wallpaper={wallpaper}
+                  isFavorite={!!favorites[wallpaper.id]}
+                  onToggleFavorite={() => toggleFavorite(wallpaper.id)}
+                />
+              ))}
+            </div>
+            
+            {/* 无限滚动哨兵元素 */}
+            {!searchQuery && activeCategory === 'all' && (
+              <>
+                <div ref={sentinelRef} className="h-4" />
+                {isLoading && <SkeletonGrid />}
+                {!hasMore && (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    已加载全部壁纸
+                  </div>
+                )}
+              </>
+            )}
+            
+            {/* 筛选模式下的提示 */}
+            {(searchQuery || activeCategory !== 'all') && (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                已展示 {filteredWallpapers.length} 张壁纸
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+================================================================================
+## 2. src/app/wallpaper/[id]/page.tsx (详情页 - 全屏预览+渐进加载)
+================================================================================
+
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ArrowLeft, Heart, Download, Share2, Search, Sparkles, Maximize2, Monitor, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  getWallpaperById,
+  getSimilarWallpapers,
+  formatResolution,
+  formatNumber,
+  wallpapers,
+} from '@/lib/wallpaper-data';
+import { useFavorites } from '@/hooks/use-favorites';
+import { downloadImage } from '@/lib/download';
+import Sidebar from '@/components/Sidebar';
+import { Footer } from '@/components/Footer';
+import { Navbar } from '@/components/Navbar';
+
+// 全屏预览组件
+function FullscreenPreview({
+  wallpaper,
+  isOpen,
+  onClose,
+  onNext,
+  onPrev,
+  hasNext,
+  hasPrev,
+  defaultDesktopRatio = false,
+}: {
+  wallpaper: typeof wallpapers[0];
+  isOpen: boolean;
+  onClose: () => void;
+  onNext: () => void;
+  onPrev: () => void;
+  hasNext: boolean;
+  hasPrev: boolean;
+  defaultDesktopRatio?: boolean;
+}) {
+  const [isDesktopRatio, setIsDesktopRatio] = useState(defaultDesktopRatio);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // 重置加载状态当壁纸改变时
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [wallpaper.id]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight' && hasNext) onNext();
+      if (e.key === 'ArrowLeft' && hasPrev) onPrev();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, onNext, onPrev, hasNext, hasPrev]);
+
+  const handleEnterFullscreen = async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch {
+      // 浏览器不支持全屏
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+      onClick={onClose}
+    >
+      {/* 关闭按钮 */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+      >
+        <X className="w-6 h-6 text-white" />
+      </button>
+
+      {/* 左右切换按钮 */}
+      {hasPrev && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrev();
+          }}
+          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        >
+          <ChevronLeft className="w-8 h-8 text-white" />
+        </button>
+      )}
+      {hasNext && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNext();
+          }}
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        >
+          <ChevronRight className="w-8 h-8 text-white" />
+        </button>
+      )}
+
+      {/* 图片容器 - 渐进式加载 */}
+      <div
+        className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 缩略图（模糊占位） */}
+        <img
+          src={wallpaper.thumbnailUrl}
+          alt={wallpaper.title}
+          className={`max-w-full max-h-[90vh] object-contain transition-all duration-500 ${
+            isDesktopRatio ? 'aspect-video' : ''
+          }`}
+          style={{
+            filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
+            opacity: imageLoaded ? 0 : 1,
+            position: imageLoaded ? 'absolute' : 'relative',
+          }}
+        />
+        {/* 原图 */}
+        <img
+          src={wallpaper.imageUrl}
+          alt={wallpaper.title}
+          className={`max-w-full max-h-[90vh] object-contain transition-all duration-500 ${
+            isDesktopRatio ? 'aspect-video' : ''
+          }`}
+          style={{
+            opacity: imageLoaded ? 1 : 0,
+            position: imageLoaded ? 'relative' : 'absolute',
+          }}
+          onLoad={() => setImageLoaded(true)}
+        />
+      </div>
+
+      {/* 底部工具栏 */}
+      <div
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={handleEnterFullscreen}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white text-sm"
+        >
+          <Maximize2 className="w-4 h-4" />
+          全屏
+        </button>
+        <button
+          onClick={() => setIsDesktopRatio(!isDesktopRatio)}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-white text-sm ${
+            isDesktopRatio ? 'bg-primary' : 'bg-white/10 hover:bg-white/20'
+          }`}
+        >
+          <Monitor className="w-4 h-4" />
+          16:9 比例
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function WallpaperDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const wallpaperId = params.id as string;
+  const wallpaper = getWallpaperById(wallpaperId);
+  const similarWallpapers = wallpaper ? getSimilarWallpapers(wallpaper) : [];
+  const { isFavorite, toggleFavorite, favoriteCount } = useFavorites();
+
+  // 全屏预览状态
+  const [showFullscreen, setShowFullscreen] = useState(false);
+  const [fullscreenDefaultRatio, setFullscreenDefaultRatio] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // 获取所有壁纸ID列表用于切换
+  const allWallpaperIds = wallpapers.map(w => w.id);
+
+  useEffect(() => {
+    if (wallpaper) {
+      const idx = allWallpaperIds.indexOf(wallpaper.id);
+      if (idx !== -1) setCurrentIndex(idx);
+    }
+  }, [wallpaper, allWallpaperIds]);
+
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      router.push(`/wallpaper/${allWallpaperIds[currentIndex - 1]}`);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < allWallpaperIds.length - 1) {
+      router.push(`/wallpaper/${allWallpaperIds[currentIndex + 1]}`);
+    }
+  };
+
+  if (!wallpaper) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">壁纸不存在</h1>
+          <Button onClick={() => router.push('/')}>返回首页</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleDownload = async () => {
+    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`, wallpaper);
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: wallpaper.title,
+        text: `来看看这张精美壁纸：${wallpaper.title}`,
+        url: window.location.href,
+      });
+    }
+  };
+
+  const handleSimilarDownload = async (url: string, title: string) => {
+    await downloadImage(url, `${title}.jpg`);
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Sidebar />
+      
+      {/* 移动端顶部导航 */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-4">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-semibold text-foreground">壁纸画廊</span>
+        </Link>
+      </header>
+
+      <main className="flex-1 md:ml-16 pt-16 md:pt-0">
+        <Navbar favoriteCount={favoriteCount} />
+
+        <div className="max-w-7xl mx-auto px-6 py-8 pb-20 md:pb-8">
+          {/* 返回按钮 */}
+          <Button
+            variant="ghost"
+            className="mb-6 gap-2"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            返回
+          </Button>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* 大图区域 - 渐进式加载，使用 mediumUrl 首屏 */}
+            <div className="lg:col-span-2">
+              <div className="relative rounded-2xl overflow-hidden shadow-float bg-muted">
+                {/* 缩略图（模糊占位）- 始终占据空间 */}
+                <img
+                  src={wallpaper.thumbnailUrl}
+                  alt={wallpaper.title}
+                  className="w-full h-auto object-cover"
+                  style={{
+                    filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
+                    opacity: imageLoaded ? 0 : 1,
+                    transition: 'filter 0.5s ease-out, opacity 0.5s ease-out',
+                  }}
+                />
+                {/* 中等尺寸图 - 首屏展示，始终绝对定位覆盖 */}
+                <img
+                  src={wallpaper.mediumUrl || wallpaper.imageUrl}
+                  alt={wallpaper.title}
+                  className="w-full h-auto object-cover"
+                  style={{
+                    opacity: imageLoaded ? 1 : 0,
+                    position: 'absolute',
+                    inset: 0,
+                    transition: 'opacity 0.5s ease-out',
+                  }}
+                  onLoad={() => setImageLoaded(true)}
+                />
+                {/* 加载指示器 */}
+                {!imageLoaded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted overflow-hidden">
+                    <div className="h-full bg-primary animate-pulse" style={{ width: '60%' }} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 信息面板 */}
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold mb-2">{wallpaper.title}</h1>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {wallpaper.tags.map((tag) => (
+                    <Link key={tag} href={`/tag/${encodeURIComponent(tag)}`}>
+                      <Badge variant="outline" className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
+                        {tag}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>分辨率</span>
+                  <span className="text-foreground">
+                    {formatResolution(wallpaper.resolution)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>来源</span>
+                  <span className="text-foreground">{wallpaper.source}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>下载量</span>
+                  <span className="text-foreground">
+                    {formatNumber(wallpaper.downloads)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>浏览量</span>
+                  <span className="text-foreground">
+                    {formatNumber(wallpaper.views)}
+                  </span>
+                </div>
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="space-y-3">
+                <Button
+                  className={`w-full gap-2 ${
+                    isFavorite(wallpaper.id) 
+                      ? 'bg-red-500 hover:bg-red-600 text-white' 
+                      : ''
+                  }`}
+                  onClick={() => toggleFavorite(wallpaper.id)}
+                >
+                  <Heart
+                    className={`w-4 h-4 ${
+                      isFavorite(wallpaper.id) ? 'fill-current' : ''
+                    }`}
+                  />
+                  {isFavorite(wallpaper.id) ? '已收藏 ❤️' : '收藏壁纸'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-4 h-4" />
+                  下载原图
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    setShowFullscreen(true);
+                    setFullscreenDefaultRatio(false);
+                  }}
+                >
+                  <Maximize2 className="w-4 h-4" />
+                  全屏预览
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    setShowFullscreen(true);
+                    setFullscreenDefaultRatio(true);
+                  }}
+                >
+                  <Monitor className="w-4 h-4" />
+                  设为桌面比例
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={handleShare}
+                >
+                  <Share2 className="w-4 h-4" />
+                  分享
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* 相似推荐 */}
+          {similarWallpapers.length > 0 && (
+            <section className="mt-12">
+              <h2 className="text-xl font-semibold mb-6">相似壁纸</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                {similarWallpapers.map((item) => (
+                  <Link key={item.id} href={`/wallpaper/${item.id}`}>
+                    <div className="relative rounded-xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300 bg-muted group">
+                      <img
+                        src={item.thumbnailUrl}
+                        alt={item.title}
+                        className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full bg-white/80"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleSimilarDownload(item.imageUrl, item.title);
+                          }}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </main>
+
+      <Footer />
+
+      {/* 全屏预览 */}
+      <FullscreenPreview
+        wallpaper={wallpaper}
+        isOpen={showFullscreen}
+        onClose={() => setShowFullscreen(false)}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        hasNext={currentIndex < allWallpaperIds.length - 1}
+        hasPrev={currentIndex > 0}
+        defaultDesktopRatio={fullscreenDefaultRatio}
+      />
+    </div>
+  );
+}
+
+================================================================================
+## 3. src/app/favorites/page.tsx (收藏页)
+================================================================================
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Heart, Download, Trash2, Search, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { wallpapers } from '@/lib/wallpaper-data';
+import { useFavorites } from '@/hooks/use-favorites';
+import { downloadImage, downloadMultipleImages } from '@/lib/download';
+import Sidebar from '@/components/Sidebar';
+import { Footer } from '@/components/Footer';
+import { Navbar } from '@/components/Navbar';
+
+export default function FavoritesPage() {
+  const { favorites, isLoaded, removeFavorite, favoriteCount } = useFavorites();
+
+  const favoriteWallpapers = wallpapers.filter((w) => favorites[w.id]);
+
+  const handleDownload = async (imageUrl: string, title: string) => {
+    await downloadImage(imageUrl, `${title}.jpg`);
+  };
+
+  const handleDownloadAll = async () => {
+    const items = favoriteWallpapers.map((w) => ({
+      url: w.imageUrl,
+      filename: `${w.title}.jpg`,
+      wallpaper: w,
+    }));
+    await downloadMultipleImages(items);
+  };
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Sidebar />
+      
+      {/* 移动端顶部导航 */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-4">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-semibold text-foreground">壁纸画廊</span>
+        </Link>
+      </header>
+
+      <main className="flex-1 md:ml-16 pt-20 md:pt-0">
+        <Navbar favoriteCount={favoriteCount} />
+
+        <div className="max-w-7xl mx-auto px-6 py-8 pb-24 md:pb-8">
+          {/* 标题区 */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2">我的收藏</h1>
+            <p className="text-muted-foreground">你收藏的精选壁纸</p>
+          </div>
+
+          {favoriteWallpapers.length === 0 ? (
+            /* 空态 */
+            <div className="text-center py-20">
+              <Heart className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+              <h2 className="text-xl font-semibold mb-2">暂无收藏</h2>
+              <p className="text-muted-foreground mb-6">
+                去首页逛逛，收藏你喜欢的壁纸吧
+              </p>
+              <Link href="/">
+                <Button className="rounded-full">去首页逛逛</Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              {/* 批量操作栏 */}
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-muted-foreground">
+                  共 {favoriteWallpapers.length} 张收藏
+                </span>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={handleDownloadAll}
+                >
+                  <Download className="w-4 h-4" />
+                  全部下载
+                </Button>
+              </div>
+
+              {/* 收藏网格 */}
+              <div className="masonry-grid">
+                {favoriteWallpapers.map((wallpaper) => (
+                  <div key={wallpaper.id} className="masonry-item group">
+                    <div className="relative rounded-2xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300 bg-muted">
+                      {/* 使用 img 标签让图片按原始比例自然撑开，实现真正的瀑布流 */}
+                      <img
+                        src={wallpaper.thumbnailUrl}
+                        alt={wallpaper.title}
+                        className="w-full h-auto object-cover"
+                      />
+                      {/* 右上角收藏标记 */}
+                      <div className="absolute top-3 right-3 p-2 bg-destructive rounded-full">
+                        <Heart className="w-4 h-4 fill-white text-white" />
+                      </div>
+                      {/* Hover 遮罩 */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <h3 className="text-white font-medium mb-2">
+                            {wallpaper.title}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => removeFavorite(wallpaper.id)}
+                              className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4 text-white" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDownload(wallpaper.imageUrl, wallpaper.title)
+                              }
+                              className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                            >
+                              <Download className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+================================================================================
+## 4. src/app/downloads/page.tsx (下载历史页)
+================================================================================
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Heart, Download, Trash2, ArrowLeft, Search, Sparkles } from 'lucide-react';
+import { useDownloadHistory } from '@/hooks/use-download-history';
+import { downloadImage } from '@/lib/download';
+import { useFavorites } from '@/hooks/use-favorites';
+import Sidebar from '@/components/Sidebar';
+import { Button } from '@/components/ui/button';
+import { Footer } from '@/components/Footer';
+import { Navbar } from '@/components/Navbar';
+
+export default function DownloadsPage() {
+  const { downloadHistory, isLoaded, removeDownload, clearHistory } = useDownloadHistory();
+  const { isFavorite } = useFavorites();
+
+  const handleDownload = async (wallpaper: typeof downloadHistory[0]['wallpaper']) => {
+    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`);
+  };
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Sidebar />
+
+      {/* 移动端顶部导航 */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-background/90 backdrop-blur-md border-b border-border z-30 flex items-center px-4">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-semibold text-foreground">壁纸画廊</span>
+        </Link>
+      </header>
+
+      <main className="flex-1 md:ml-16 pt-20 md:pt-0">
+        <Navbar />
+
+        <div className="max-w-7xl mx-auto px-6 py-8 pb-24 md:pb-8">
+          {/* 返回按钮 */}
+          <Button
+            variant="ghost"
+            className="mb-6 gap-2"
+            onClick={() => window.location.href = '/'}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            返回首页
+          </Button>
+
+          {/* 标题区 */}
+          <div className="mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">下载历史</h1>
+            <p className="text-muted-foreground mt-2">你下载过的壁纸记录</p>
+          </div>
+
+          {/* 操作栏 */}
+          {downloadHistory.length > 0 && (
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-sm text-muted-foreground">
+                共 {downloadHistory.length} 张
+              </span>
+              <button
+                onClick={clearHistory}
+                className="text-sm text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                清空历史
+              </button>
+            </div>
+          )}
+
+          {/* 空态 */}
+          {downloadHistory.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Download className="w-16 h-16 text-muted-foreground/30 mb-4" />
+              <p className="text-muted-foreground mb-4">暂无下载记录</p>
+              <Link
+                href="/"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+              >
+                去首页逛逛
+              </Link>
+            </div>
+          ) : (
+            /* 瀑布流网格 */
+            <div className="masonry-grid">
+              {downloadHistory.map((item) => {
+                const wallpaper = item.wallpaper;
+                const isFav = isFavorite(wallpaper.id);
+
+                return (
+                  <div key={wallpaper.id} className="masonry-item group">
+                    <div className="relative rounded-xl overflow-hidden bg-muted shadow-sm hover:shadow-lg transition-shadow duration-300">
+                      {/* 图片 */}
+                      <Link href={`/wallpaper/${wallpaper.id}`}>
+                        <img
+                          src={wallpaper.thumbnailUrl}
+                          alt={wallpaper.title}
+                          className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </Link>
+
+                      {/* Hover 遮罩 */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <p className="text-white text-sm font-medium truncate mb-2">{wallpaper.title}</p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeDownload(wallpaper.id);
+                              }}
+                              className="flex-1 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs rounded-lg backdrop-blur-sm transition-colors flex items-center justify-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              移除
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(wallpaper);
+                              }}
+                              className="flex-1 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs rounded-lg backdrop-blur-sm transition-colors flex items-center justify-center gap-1"
+                            >
+                              <Download className="w-3 h-3" />
+                              下载
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 收藏标记 */}
+                      {isFav && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md">
+                          <Heart className="w-3 h-3 text-white fill-white" />
+                        </div>
+                      )}
+
+                      {/* 下载时间 */}
+                      <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-md text-[10px] text-white">
+                        {new Date(item.downloadedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+================================================================================
+## 5. src/app/tag/[name]/page.tsx (标签分类页)
+================================================================================
+
+'use client';
+
+import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { Heart, Download, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useFavorites } from '@/hooks/use-favorites';
+import {
+  wallpapers,
+  getWallpapersByTag,
+} from '@/lib/wallpaper-data';
+import { downloadImage } from '@/lib/download';
+import type { Wallpaper } from '@/types/wallpaper';
+import Sidebar from '@/components/Sidebar';
+import { Footer } from '@/components/Footer';
+
+// 导航栏组件
+function Navbar({ favoriteCount }: { favoriteCount: number }) {
+  return (
+    <header className="hidden md:flex sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/10 transition-all duration-300">
+      <div className="flex-1 h-14 flex items-center justify-between px-3">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-medium text-foreground">壁纸画廊</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/favorites">
+            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 relative">
+              <Heart className="w-4 h-4 text-muted-foreground" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center">
+                  {favoriteCount > 9 ? '9+' : favoriteCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// 壁纸卡片组件
+const WallpaperCard = memo(function WallpaperCard({
+  wallpaper,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  wallpaper: Wallpaper;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`, wallpaper);
+  };
+
+  // hover 预加载 mediumUrl
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (wallpaper.mediumUrl) {
+      const img = new window.Image();
+      img.src = wallpaper.mediumUrl;
+    }
+  };
+
+  return (
+    <Link
+      href={`/wallpaper/${wallpaper.id}`}
+      className="masonry-item block"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative overflow-hidden rounded-lg bg-muted/30">
+        {!isLoaded && (
+          <div className="absolute inset-0 bg-muted animate-pulse" />
+        )}
+        <img
+          src={wallpaper.thumbnailUrl}
+          alt={wallpaper.title}
+          loading="lazy"
+          onLoad={() => setIsLoaded(true)}
+          className={`w-full h-auto object-cover rounded-lg transition-all duration-500 ${
+            isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
+          } ${
+            isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
+          }`}
+        />
+        <div
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 rounded-lg ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <div className="absolute top-2 right-2 flex items-center gap-1.5">
+            <button
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                isFavorite 
+                  ? 'bg-red-500 text-white' 
+                  : 'bg-white/80 text-white hover:text-red-500 hover:bg-white/90'
+              }`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+            </button>
+            <button
+              className="w-8 h-8 rounded-full bg-white/90 text-foreground hover:bg-white flex items-center justify-center transition-all duration-200"
+              onClick={handleDownload}
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        {isFavorite && !isHovered && (
+          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+            <Heart className="w-3 h-3 text-white fill-current" />
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+});
+
+export default function TagPage() {
+  const params = useParams();
+  const tagName = decodeURIComponent(params.name as string);
+  const { favorites, toggleFavorite, favoriteCount } = useFavorites();
+  
+  // 获取该标签下的壁纸
+  const tagWallpapers = useMemo(() => {
+    return getWallpapersByTag(tagName);
+  }, [tagName]);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      
+      {/* 主内容区 */}
+      <main className="md:ml-16">
+        <Navbar favoriteCount={favoriteCount} />
+        
+        {/* 标签信息 */}
+        <div className="pt-8 pb-4 px-6">
+          <div className="max-w-7xl mx-auto">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="mb-4 gap-2">
+                ← 返回首页
+              </Button>
+            </Link>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+              #{tagName}
+            </h1>
+            <p className="text-muted-foreground">
+              共 {tagWallpapers.length} 张壁纸
+            </p>
+          </div>
+        </div>
+
+        {/* 壁纸列表 */}
+        <div className="pb-12 px-3">
+          <div className="max-w-7xl mx-auto">
+            {tagWallpapers.length > 0 ? (
+              <div className="columns-1 md:columns-3 gap-2">
+                {tagWallpapers.map((wallpaper) => (
+                  <WallpaperCard
+                    key={wallpaper.id}
+                    wallpaper={wallpaper}
+                    isFavorite={favorites[wallpaper.id]}
+                    onToggleFavorite={() => toggleFavorite(wallpaper.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <p className="text-muted-foreground mb-4">该标签下暂无壁纸</p>
+                <p className="text-sm text-muted-foreground">更多壁纸即将上线，敬请期待</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Footer />
+      </main>
+    </div>
+  );
+}
+
+================================================================================
+## 6. src/app/not-found.tsx (404页面)
+================================================================================
+
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Home, ArrowLeft, ImageOff } from 'lucide-react';
+import Sidebar from '@/components/Sidebar';
+import { Footer } from '@/components/Footer';
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      
+      {/* 主内容区 */}
+      <main className="md:ml-16">
+        <div className="flex flex-col items-center justify-center min-h-[80vh] px-6">
+          {/* 插画/图标 */}
+          <div className="relative mb-8">
+            <div className="w-32 h-32 rounded-full bg-muted/50 flex items-center justify-center">
+              <ImageOff className="w-16 h-16 text-muted-foreground/60" />
+            </div>
+            {/* 装饰元素 */}
+            <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary/20" />
+            <div className="absolute -bottom-3 -left-3 w-6 h-6 rounded-full bg-primary/10" />
+          </div>
+          
+          {/* 提示文字 */}
+          <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-3">
+            壁纸不存在或已被删除
+          </h1>
+          <p className="text-muted-foreground text-center max-w-md mb-8">
+            您访问的壁纸可能已被移除，或者链接地址有误。
+            <br />
+            请返回首页浏览更多精彩壁纸。
+          </p>
+          
+          {/* 操作按钮 */}
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => window.history.back()}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              返回上页
+            </Button>
+            <Link href="/">
+              <Button className="gap-2">
+                <Home className="w-4 h-4" />
+                返回首页
+              </Button>
+            </Link>
+          </div>
+        </div>
+        
+        <Footer />
+      </main>
+    </div>
+  );
+}
+
+================================================================================
+# 文档结束
+# 总计约 1,435 行代码
+# 包含：首页、详情页、收藏页、下载历史页、标签分类页、404页面
+================================================================================
