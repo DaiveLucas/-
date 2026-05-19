@@ -55,11 +55,15 @@ export default function Sidebar({ searchInputRef }: SidebarProps) {
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   const [tooltip, setTooltip] = useState<string | null>(null);
+  const [locale, setLocale] = useState('zh');
 
   useEffect(() => {
     setMounted(true);
     setIsDark(document.documentElement.classList.contains('dark'));
+    const savedLocale = localStorage.getItem('locale');
+    if (savedLocale) setLocale(savedLocale);
   }, []);
 
   const toggleTheme = () => {
@@ -67,6 +71,12 @@ export default function Sidebar({ searchInputRef }: SidebarProps) {
     setIsDark(newIsDark);
     document.documentElement.classList.toggle('dark', newIsDark);
     localStorage.setItem('theme', newIsDark ? 'dark' : 'light');
+  };
+
+  const handleLocaleChange = (newLocale: string) => {
+    setLocale(newLocale);
+    localStorage.setItem('locale', newLocale);
+    setShowLangMenu(false);
   };
 
   const handleRandomWallpaper = () => {
@@ -162,9 +172,34 @@ export default function Sidebar({ searchInputRef }: SidebarProps) {
           </TooltipItem>
 
           <TooltipItem text="语言切换" tooltip={tooltip} setTooltip={setTooltip}>
-            <button className="p-3 rounded-lg hover:bg-muted/50 transition-colors">
-              <Globe className={iconClass(false)} />
-            </button>
+            <div className="relative">
+              <button 
+                className="p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                onClick={() => setShowLangMenu(!showLangMenu)}
+              >
+                <Globe className={iconClass(false)} />
+              </button>
+              
+              {showLangMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)} />
+                  <div className="absolute left-full ml-2 top-0 bg-popover border border-border rounded-lg shadow-lg py-1 min-w-[100px] z-50">
+                    <button
+                      onClick={() => handleLocaleChange('zh')}
+                      className={`w-full px-3 py-2 text-sm hover:bg-muted flex items-center gap-2 ${locale === 'zh' ? 'text-primary font-medium' : 'text-popover-foreground'}`}
+                    >
+                      {locale === 'zh' && '✓ '}中文
+                    </button>
+                    <button
+                      onClick={() => handleLocaleChange('en')}
+                      className={`w-full px-3 py-2 text-sm hover:bg-muted flex items-center gap-2 ${locale === 'en' ? 'text-primary font-medium' : 'text-popover-foreground'}`}
+                    >
+                      {locale === 'en' && '✓ '}English
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </TooltipItem>
 
           <div className="relative">

@@ -106,13 +106,19 @@ export default function TagPage() {
   const tagName = decodeURIComponent(params.name as string);
   const { favorites, toggleFavorite, favoriteCount } = useFavorites();
   
+  // 页面淡入效果
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
   // 获取该标签下的壁纸
   const tagWallpapers = useMemo(() => {
     return getWallpapersByTag(tagName);
   }, [tagName]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background transition-opacity duration-200 ease-out ${isMounted ? 'opacity-100' : 'opacity-0'}`}>
       <Sidebar />
       
       {/* 主内容区 */}

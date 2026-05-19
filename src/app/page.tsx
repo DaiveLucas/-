@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import Link from 'next/link';
-import { Search, Heart, Download, Sparkles } from 'lucide-react';
+import { Search, Heart, Download, Sparkles, ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFavorites } from '@/hooks/use-favorites';
@@ -97,6 +97,7 @@ const WallpaperCard = memo(function WallpaperCard({
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -123,22 +124,33 @@ const WallpaperCard = memo(function WallpaperCard({
     >
       <div className="relative overflow-hidden rounded-lg bg-muted/30">
         {/* 骨架/模糊占位 */}
-        {!isLoaded && (
+        {!isLoaded && !hasError && (
           <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
         
+        {/* 加载失败占位 */}
+        {hasError && (
+          <div className="absolute inset-0 bg-muted/50 flex flex-col items-center justify-center gap-2 min-h-[150px]">
+            <ImageOff className="w-8 h-8 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">加载失败</span>
+          </div>
+        )}
+        
         {/* 图片 - 按原始比例展示 */}
-        <img
-          src={wallpaper.thumbnailUrl}
-          alt={wallpaper.title}
-          loading="lazy"
-          onLoad={() => setIsLoaded(true)}
-          className={`w-full h-auto object-cover rounded-lg transition-all duration-500 ${
-            isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
-          } ${
-            isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
-          }`}
-        />
+        {!hasError && (
+          <img
+            src={wallpaper.thumbnailUrl}
+            alt={wallpaper.title}
+            loading="lazy"
+            onLoad={() => setIsLoaded(true)}
+            onError={() => setHasError(true)}
+            className={`w-full h-auto object-cover rounded-lg transition-all duration-500 ${
+              isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
+            } ${
+              isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
+            }`}
+          />
+        )}
 
         {/* Hover 遮罩 - 黑色半透明 */}
         <div
@@ -210,6 +222,12 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef<HTMLDivElement>(null);
   const { favorites, toggleFavorite, favoriteCount } = useFavorites();
+  
+  // 页面淡入效果
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   // 无限滚动状态 - 使用缓存初始化
   const [page, setPage] = useState(cachedPage);
@@ -328,7 +346,7 @@ export default function HomePage() {
   }, [activeCategory, searchQuery, allWallpapers]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className={`min-h-screen bg-background flex flex-col transition-opacity duration-200 ease-out ${isMounted ? 'opacity-100' : 'opacity-0'}`}>
       <Sidebar searchInputRef={searchRef} />
       
       {/* 移动端顶部导航 */}

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Heart, Download, Share2, Search, Sparkles, Maximize2, Monitor, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, Heart, Download, Share2, Search, Sparkles, Maximize2, Monitor, ChevronLeft, ChevronRight, X, ChevronDown, ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -173,11 +173,22 @@ export default function WallpaperDetailPage() {
   const similarWallpapers = wallpaper ? getSimilarWallpapers(wallpaper) : [];
   const { isFavorite, toggleFavorite, favoriteCount } = useFavorites();
 
+  // 页面淡入效果
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // 全屏预览状态
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [fullscreenDefaultRatio, setFullscreenDefaultRatio] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
+
+  // 分辨率选择相关
+  const [showResMenu, setShowResMenu] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [mediumError, setMediumError] = useState(false);
 
   // 获取所有壁纸ID列表用于切换
   const allWallpaperIds = wallpapers.map(w => w.id);
@@ -212,8 +223,32 @@ export default function WallpaperDetailPage() {
     );
   }
 
-  const handleDownload = async () => {
-    await downloadImage(wallpaper.imageUrl, `${wallpaper.title}.jpg`, wallpaper);
+  // 根据原始宽高比计算指定宽度对应的高度
+  const getHeightForWidth = (width: number) => {
+    const ratio = wallpaper.resolution.height / wallpaper.resolution.width;
+    return Math.round(width * ratio);
+  };
+
+  // 分辨率选项
+  const resolutionOptions = [
+    { label: '标清', width: 800, desc: '适合快速预览' },
+    { label: '高清', width: 1280, desc: '日常使用' },
+    { label: '超清', width: 1920, desc: '最佳画质' },
+  ];
+
+  // 获取指定分辨率的URL
+  const getUrlForResolution = (width: number) => {
+    if (width >= 1920) return wallpaper.imageUrl;
+    const height = getHeightForWidth(width);
+    const idMatch = wallpaper.imageUrl.match(/\/id\/(\d+)\//);
+    const id = idMatch ? idMatch[1] : wallpaper.id;
+    return `https://picsum.photos/id/${id}/${width}/${height}`;
+  };
+
+  const handleDownload = async (width?: number) => {
+    const url = width ? getUrlForResolution(width) : wallpaper.imageUrl;
+    await downloadImage(url, `${wallpaper.title}.jpg`, wallpaper);
+    setShowResMenu(false);
   };
 
   const handleShare = () => {
@@ -231,7 +266,7 @@ export default function WallpaperDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className={`min-h-screen bg-background flex flex-col transition-opacity duration-200 ease-out ${isMounted ? 'opacity-100' : 'opacity-0'}`}>
       <Sidebar />
       
       {/* 移动端顶部导航 */}
@@ -262,35 +297,52 @@ export default function WallpaperDetailPage() {
             {/* 大图区域 - 渐进式加载，使用 mediumUrl 首屏 */}
             <div className="lg:col-span-2">
               <div className="relative rounded-2xl overflow-hidden shadow-float bg-muted">
-                {/* 缩略图（模糊占位）- 始终占据空间 */}
-                <img
-                  src={wallpaper.thumbnailUrl}
-                  alt={wallpaper.title}
-                  className="w-full h-auto object-cover"
-                  style={{
-                    filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
-                    opacity: imageLoaded ? 0 : 1,
-                    transition: 'filter 0.5s ease-out, opacity 0.5s ease-out',
-                  }}
-                />
-                {/* 中等尺寸图 - 首屏展示，始终绝对定位覆盖 */}
-                <img
-                  src={wallpaper.mediumUrl || wallpaper.imageUrl}
-                  alt={wallpaper.title}
-                  className="w-full h-auto object-cover"
-                  style={{
-                    opacity: imageLoaded ? 1 : 0,
-                    position: 'absolute',
-                    inset: 0,
-                    transition: 'opacity 0.5s ease-out',
-                  }}
-                  onLoad={() => setImageLoaded(true)}
-                />
-                {/* 加载指示器 */}
-                {!imageLoaded && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted overflow-hidden">
-                    <div className="h-full bg-primary animate-pulse" style={{ width: '60%' }} />
+                {/* 加载失败显示 */}
+                {imageError && mediumError ? (
+                  <div className="w-full aspect-video flex flex-col items-center justify-center gap-3 bg-muted/50">
+                    <ImageOff className="w-12 h-12 text-muted-foreground" />
+                    <span className="text-muted-foreground">图片加载失败，请稍后重试</span>
                   </div>
+                ) : (
+                  <>
+                    {/* 缩略图（模糊占位）- 始终占据空间 */}
+                    <img
+                      src={wallpaper.thumbnailUrl}
+                      alt={wallpaper.title}
+                      className="w-full h-auto object-cover"
+                      style={{
+                        filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
+                        opacity: imageLoaded ? 0 : 1,
+                        transition: 'filter 0.5s ease-out, opacity 0.5s ease-out',
+                      }}
+                    />
+                    {/* 中等尺寸图 - 首屏展示，始终绝对定位覆盖 */}
+                    <img
+                      src={wallpaper.mediumUrl || wallpaper.imageUrl}
+                      alt={wallpaper.title}
+                      className="w-full h-auto object-cover"
+                      style={{
+                        opacity: imageLoaded ? 1 : 0,
+                        position: 'absolute',
+                        inset: 0,
+                        transition: 'opacity 0.5s ease-out',
+                      }}
+                      onLoad={() => setImageLoaded(true)}
+                      onError={() => {
+                        setMediumError(true);
+                        // 如果 mediumUrl 加载失败，尝试加载原图
+                        if (!imageLoaded) {
+                          setImageLoaded(true);
+                        }
+                      }}
+                    />
+                    {/* 加载指示器 */}
+                    {!imageLoaded && !mediumError && (
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted overflow-hidden">
+                        <div className="h-full bg-primary animate-pulse" style={{ width: '60%' }} />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -352,14 +404,46 @@ export default function WallpaperDetailPage() {
                   />
                   {isFavorite(wallpaper.id) ? '已收藏 ❤️' : '收藏壁纸'}
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={handleDownload}
-                >
-                  <Download className="w-4 h-4" />
-                  下载原图
-                </Button>
+                
+                {/* 分辨率选择下载 */}
+                <div className="relative w-full">
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 justify-between"
+                    onClick={() => setShowResMenu(!showResMenu)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Download className="w-4 h-4" />
+                      下载壁纸
+                    </span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  
+                  {showResMenu && (
+                    <>
+                      {/* 点击外部关闭 */}
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowResMenu(false)} 
+                      />
+                      
+                      {/* 分辨率菜单 */}
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg py-1 z-50">
+                        {resolutionOptions.map((opt) => (
+                          <button
+                            key={opt.width}
+                            onClick={() => handleDownload(opt.width)}
+                            className="w-full px-3 py-2 text-sm text-popover-foreground hover:bg-muted flex items-center justify-between"
+                          >
+                            <span className="font-medium">{opt.label}</span>
+                            <span className="text-muted-foreground text-xs">{opt.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+                
                 <Button
                   variant="outline"
                   className="w-full gap-2"
