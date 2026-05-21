@@ -44,6 +44,16 @@ function mapWallpaper(w: Record<string, unknown>): Wallpaper {
   } as unknown as Wallpaper;
 }
 
+// 洗牌函数 - Fisher-Yates 算法
+function shuffleArray(arr: Wallpaper[]) {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 // 精简搜索框组件 - 紧凑设计
 function SearchBar({
   searchQuery,
@@ -240,6 +250,29 @@ function SkeletonGrid() {
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<WallpaperCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // 分类切换处理
+  const handleCategoryChange = async (category: WallpaperCategory) => {
+    setActiveCategory(category);
+    if (category === 'all' || category === 'popular' || category === 'latest') {
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('wallpapers')
+        .select('*')
+        .eq('category', category)
+        .limit(50);
+      if (error) throw error;
+      const formatted = (data || []).map(w => mapWallpaper(w));
+      setAllWallpapers(formatted.length > 0 ? formatted : staticWallpapers.filter(w => w.category === category));
+      setHasMore(false);
+    } catch (error) {
+      console.error('Failed to fetch category:', error);
+    }
+    setIsLoading(false);
+  };
   const searchRef = useRef<HTMLDivElement>(null);
   const { favorites, toggleFavorite, favoriteCount } = useFavorites();
   
@@ -267,14 +300,15 @@ export default function HomePage() {
         const { data, error } = await supabase
           .from('wallpapers')
           .select('*')
-          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
           .range(0, 15);
         
         if (error) throw error;
         
         const formatted = (data || []).map(w => mapWallpaper(w));
         
-        setAllWallpapers(formatted.length > 0 ? formatted : staticWallpapers);
+        const sorted = formatted.length > 0 ? shuffleArray(formatted) : staticWallpapers;
+        setAllWallpapers(sorted);
         setHasMore(formatted.length > 0);
         setPage(1);
       } catch (error) {
@@ -318,7 +352,7 @@ export default function HomePage() {
       const { data, error } = await supabase
         .from('wallpapers')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
         .range(offset, offset + 15);
       
       if (error) throw error;
@@ -475,7 +509,7 @@ export default function HomePage() {
           />
           <CategoryTabs
             activeCategory={activeCategory}
-            onCategoryChange={setActiveCategory}
+            onCategoryChange={handleCategoryChange}
           />
           <div className="py-3 pb-20 md:pb-6">
             {/* 初始加载骨架屏 */}

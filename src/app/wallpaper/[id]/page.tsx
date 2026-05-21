@@ -15,6 +15,21 @@ import {
 } from '@/lib/wallpaper-data';
 import { wallpapers as staticWallpapers } from '@/lib/wallpaper-data';
 import type { Wallpaper } from '@/types/wallpaper';
+import { supabase } from '@/lib/supabase';
+
+// 数据格式转换函数
+function mapWallpaper(w: Record<string, unknown>): Wallpaper {
+  const { width, height, image_url, thumbnail_url, medium_url, source_id, created_at, ...rest } = w;
+  return {
+    ...rest,
+    imageUrl: image_url as string,
+    thumbnailUrl: thumbnail_url as string,
+    mediumUrl: medium_url as string | undefined,
+    sourceId: source_id as string | undefined,
+    createdAt: created_at as string,
+    resolution: { width: width as number, height: height as number },
+  } as unknown as Wallpaper;
+}
 import { useFavorites } from '@/hooks/use-favorites';
 import { downloadImage } from '@/lib/download';
 import Sidebar from '@/components/Sidebar';
@@ -172,12 +187,6 @@ export default function WallpaperDetailPage() {
   const wallpaperId = params.id as string;
   const { isFavorite, toggleFavorite, favoriteCount } = useFavorites();
 
-  // 页面淡入效果
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   // 壁纸数据状态 - 优先从 API 获取
   const [wallpaper, setWallpaper] = useState<Wallpaper | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -207,23 +216,25 @@ export default function WallpaperDetailPage() {
     }
   }, []);
 
-  // 从 API 获取壁纸详情
+  // 从 Supabase 获取壁纸详情
   useEffect(() => {
     const fetchWallpaper = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/wallpapers/${wallpaperId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setWallpaper(data.wallpaper);
+        const { data, error } = await supabase
+          .from('wallpapers')
+          .select('*')
+          .eq('id', wallpaperId)
+          .single();
+        if (error) throw error;
+        if (data) {
+          setWallpaper(mapWallpaper(data) as Wallpaper);
         } else {
-          // API 失败，降级使用静态数据
           const fallback = getWallpaperById(wallpaperId);
           setWallpaper(fallback || null);
         }
       } catch (error) {
-        console.error('Failed to fetch wallpaper from API, using fallback:', error);
-        // 降级方案
+        console.error('Failed to fetch wallpaper from Supabase, using fallback:', error);
         const fallback = getWallpaperById(wallpaperId);
         setWallpaper(fallback || null);
       } finally {
@@ -234,26 +245,23 @@ export default function WallpaperDetailPage() {
     fetchWallpaper();
   }, [wallpaperId]);
 
-  // 获取相似壁纸 - 从 API 获取同分类壁纸
+  // 获取相似壁纸 - 从 Supabase 获取同分类壁纸
   useEffect(() => {
     if (!wallpaper) return;
     
     const fetchSimilar = async () => {
       try {
-        const response = await fetch(`/api/wallpapers?page=1&limit=7&category=${wallpaper.category}`);
-        if (response.ok) {
-          const data = await response.json();
-          // 过滤掉当前壁纸，取前6张
-          const filtered = (data.wallpapers as Wallpaper[])
-            .filter(w => w.id !== wallpaper.id)
-            .slice(0, 6);
-          setSimilarWallpapers(filtered);
-        } else {
-          // API 失败，降级使用静态数据
-          setSimilarWallpapers(getSimilarWallpapers(wallpaper));
-        }
+        const { data, error } = await supabase
+          .from('wallpapers')
+          .select('*')
+          .eq('category', wallpaper.category)
+          .limit(7);
+        if (error) throw error;
+        const formatted = (data || []).map(w => mapWallpaper(w) as Wallpaper)
+          .filter(w => w.id !== wallpaper.id)
+          .slice(0, 6);
+        setSimilarWallpapers(formatted.length > 0 ? formatted : getSimilarWallpapers(wallpaper));
       } catch {
-        // 降级使用静态数据
         setSimilarWallpapers(getSimilarWallpapers(wallpaper));
       }
     };
@@ -336,12 +344,6 @@ export default function WallpaperDetailPage() {
   const handleDownload = async (width?: number) => {
     const url = width ? getUrlForResolution(width) : wallpaper.imageUrl;
     await downloadImage(url, `${wallpaper.title}.jpg`, wallpaper);
-    // 调用下载计数 API
-    try {
-      await fetch(`/api/wallpapers/${wallpaper.id}/download`, { method: 'POST' });
-    } catch (error) {
-      console.error('Failed to update download count:', error);
-    }
     setShowResMenu(false);
   };
 
@@ -360,7 +362,7 @@ export default function WallpaperDetailPage() {
   };
 
   return (
-    <div className={`min-h-screen bg-background flex flex-col transition-opacity duration-200 ease-out ${isMounted ? 'opacity-100' : 'opacity-0'}`}>
+    <div className="min-h-screen bg-background flex flex-col">
       <Sidebar />
       
       {/* 移动端顶部导航 */}
