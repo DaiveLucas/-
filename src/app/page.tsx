@@ -12,6 +12,7 @@ import {
 } from '@/lib/wallpaper-data';
 import { wallpapers as staticWallpapers } from '@/lib/wallpaper-data';
 import { downloadImage } from '@/lib/download';
+import { supabase } from '@/lib/supabase';
 import type { WallpaperCategory, Wallpaper } from '@/types/wallpaper';
 import Sidebar from '@/components/Sidebar';
 import { Footer } from '@/components/Footer';
@@ -228,12 +229,6 @@ export default function HomePage() {
   const searchRef = useRef<HTMLDivElement>(null);
   const { favorites, toggleFavorite, favoriteCount } = useFavorites();
   
-  // 页面淡入效果
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  
   // 无限滚动状态 - 使用缓存初始化
   const [page, setPage] = useState(cachedPage);
   const [allWallpapers, setAllWallpapers] = useState<Wallpaper[]>(
@@ -255,16 +250,24 @@ export default function HomePage() {
     
     const fetchInitialData = async () => {
       try {
-        const response = await fetch('/api/wallpapers?page=1&limit=16');
-        if (!response.ok) throw new Error('API failed');
+        const { data, error } = await supabase
+          .from('wallpapers')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(0, 15);
         
-        const data: WallpapersApiResponse = await response.json();
-        setAllWallpapers(data.wallpapers.length > 0 ? data.wallpapers : staticWallpapers);
-        setHasMore(data.wallpapers.length > 0 ? data.hasMore : false);
+        if (error) throw error;
+        
+        const formatted = (data || []).map(w => {
+          const { width, height, ...rest } = w;
+          return { ...rest, resolution: { width, height } };
+        });
+        
+        setAllWallpapers(formatted.length > 0 ? formatted : staticWallpapers);
+        setHasMore(formatted.length > 0);
         setPage(1);
       } catch (error) {
-        console.error('Failed to fetch initial wallpapers, using fallback:', error);
-        // 降级方案：使用静态数据
+        console.error('Failed to fetch wallpapers:', error);
         setAllWallpapers(staticWallpapers);
         setHasMore(false);
       }
@@ -283,7 +286,7 @@ export default function HomePage() {
     }
   }, [allWallpapers, page]);
 
-  // 加载更多壁纸 - 调用 API
+  // 加载更多壁纸 - 直接查询 Supabase
   const loadMore = useCallback(async () => {
     // 加锁机制：正在加载 / 没有更多 / 1秒内已加载过
     const now = Date.now();
@@ -299,24 +302,29 @@ export default function HomePage() {
     
     try {
       const nextPage = page + 1;
-      const apiUrl = `/api/wallpapers?page=${nextPage}&limit=16`;
+      const offset = (nextPage - 1) * 16;
       
-      const response = await fetch(apiUrl);
-      if (!response.ok) throw new Error('API failed');
+      const { data, error } = await supabase
+        .from('wallpapers')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + 15);
       
-      const data: WallpapersApiResponse = await response.json();
+      if (error) throw error;
       
-      if (data.wallpapers.length === 0) {
+      const formatted = (data || []).map(w => {
+        const { width, height, ...rest } = w;
+        return { ...rest, resolution: { width, height } };
+      });
+      
+      if (formatted.length === 0) {
         setHasMore(false);
       } else {
-        // 追加数据，不刷新页面
-        setAllWallpapers((prev) => [...prev, ...data.wallpapers]);
+        setAllWallpapers(prev => [...prev, ...formatted]);
         setPage(nextPage);
-        setHasMore(data.hasMore);
       }
     } catch (error) {
-      console.error('Failed to load wallpapers from API, using fallback:', error);
-      // 降级方案：API 失败时停止加载更多
+      console.error('Failed to load wallpapers:', error);
       setHasMore(false);
     }
     
@@ -384,11 +392,17 @@ export default function HomePage() {
     setIsSearching(true);
     searchDebounceRef.current = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/wallpapers/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        if (!response.ok) throw new Error('Search API failed');
-        
-        const data = await response.json();
-        setSearchResults(data.wallpapers || []);
+        const { data, error } = await supabase
+          .from('wallpapers')
+          .select('*')
+          .or('title.ilike.%' + searchQuery.trim() + '%,tags.cs.{' + searchQuery.trim() + '}')
+          .limit(50);
+        if (error) throw error;
+        const formatted = (data || []).map(w => {
+          const { width, height, ...rest } = w as { width: number; height: number; [key: string]: unknown };
+          return { ...rest, resolution: { width, height } };
+        });
+        setSearchResults(formatted as Wallpaper[]);
       } catch (error) {
         console.error('Search API failed, using local search:', error);
         // 降级方案：使用本地搜索
@@ -432,7 +446,7 @@ export default function HomePage() {
   }, [activeCategory, searchQuery, allWallpapers, searchResults]);
 
   return (
-    <div className={`min-h-screen bg-background flex flex-col transition-opacity duration-200 ease-out ${isMounted ? 'opacity-100' : 'opacity-0'}`}>
+    <div className="min-h-screen bg-background flex flex-col">
       <Sidebar searchInputRef={searchRef} />
       
       {/* 移动端顶部导航 */}

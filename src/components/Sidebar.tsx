@@ -16,6 +16,7 @@ import {
   Info,
 } from 'lucide-react';
 import { wallpapers, getAllWallpapers } from '@/lib/wallpaper-data';
+import { supabase } from '@/lib/supabase';
 
 interface SidebarProps {
   searchInputRef?: React.RefObject<HTMLDivElement | null>;
@@ -81,17 +82,16 @@ export default function Sidebar({ searchInputRef }: SidebarProps) {
 
   const handleRandomWallpaper = async () => {
     try {
-      // 优先从 API 获取随机壁纸
-      const response = await fetch('/api/wallpapers/random');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.wallpaper) {
-          router.push(`/wallpaper/${data.wallpaper.id}`);
-          return;
-        }
+      // 直接用 Supabase 查询随机壁纸
+      const { count } = await supabase.from('wallpapers').select('', { count: 'exact', head: true });
+      const randomOffset = Math.floor(Math.random() * (count || 1));
+      const { data } = await supabase.from('wallpapers').select('*').range(randomOffset, randomOffset);
+      if (data && data.length > 0) {
+        router.push('/wallpaper/' + data[0].id);
+        return;
       }
     } catch (error) {
-      console.error('Random API failed, using fallback:', error);
+      console.error('Random query failed, using fallback:', error);
     }
     // 降级方案：使用本地数据
     const allWallpapers = getAllWallpapers();
