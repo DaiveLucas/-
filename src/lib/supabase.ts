@@ -1,17 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = 'https://usmucbgltajiipvpuixp.supabase.co'
+const supabasePublishableKey = 'sb_publishable_O8tRB0CeVp4yl9KWqEvkGA_5ty80OI1'
+const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzbXVjYmdsdGFqaWlwdnB1aXhwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTI5NDA1NSwiZXhwIjoyMDk0ODcwMDU1fQ.bapVv40qzYogBRsohZtacL6JLKnbBxbdAjsCl7JfNRw'
 
-// 前端客户端（publishable key，受 RLS 保护）
-export const supabase = createClient(
-  supabaseUrl || '',
-  supabasePublishableKey || ''
-)
-
-// 服务端客户端（service role key，绕过 RLS，仅 API 路由使用）
-export const supabaseAdmin = createClient(
-  supabaseUrl || '',
-  supabaseServiceRoleKey || ''
-)
+export const supabase = createClient(supabaseUrl, supabasePublishableKey)
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
