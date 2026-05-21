@@ -459,6 +459,9 @@ export default function HomePage() {
             onCategoryChange={setActiveCategory}
           />
           <div className="py-3 pb-20 md:pb-6">
+            {/* 初始加载骨架屏 */}
+            {allWallpapers.length === 0 && !isSearching && <SkeletonGrid />}
+            
             {/* 搜索加载状态 */}
             {isSearching && <SkeletonGrid />}
             
