@@ -12,8 +12,9 @@ import {
   getSimilarWallpapers,
   formatResolution,
   formatNumber,
-  wallpapers,
 } from '@/lib/wallpaper-data';
+import { wallpapers as staticWallpapers } from '@/lib/wallpaper-data';
+import type { Wallpaper } from '@/types/wallpaper';
 import { useFavorites } from '@/hooks/use-favorites';
 import { downloadImage } from '@/lib/download';
 import Sidebar from '@/components/Sidebar';
@@ -31,7 +32,7 @@ function FullscreenPreview({
   hasPrev,
   defaultDesktopRatio = false,
 }: {
-  wallpaper: typeof wallpapers[0];
+  wallpaper: Wallpaper;
   isOpen: boolean;
   onClose: () => void;
   onNext: () => void;
@@ -178,9 +179,33 @@ export default function WallpaperDetailPage() {
   }, []);
 
   // 壁纸数据状态 - 优先从 API 获取
-  const [wallpaper, setWallpaper] = useState<typeof wallpapers[0] | null>(null);
+  const [wallpaper, setWallpaper] = useState<Wallpaper | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const similarWallpapers = wallpaper ? getSimilarWallpapers(wallpaper) : [];
+  const [similarWallpapers, setSimilarWallpapers] = useState<Wallpaper[]>([]);
+
+  // 从 sessionStorage 读取壁纸ID列表
+  const [allWallpaperIds, setAllWallpaperIds] = useState<string[]>([]);
+
+  // 初始化：从 sessionStorage 读取壁纸ID列表
+  useEffect(() => {
+    const stored = sessionStorage.getItem('allWallpaperIds');
+    if (stored) {
+      try {
+        const ids = JSON.parse(stored);
+        if (Array.isArray(ids) && ids.length > 0) {
+          setAllWallpaperIds(ids);
+        } else {
+          // 降级使用静态数据
+          setAllWallpaperIds(staticWallpapers.map(w => w.id));
+        }
+      } catch {
+        setAllWallpaperIds(staticWallpapers.map(w => w.id));
+      }
+    } else {
+      // 降级使用静态数据
+      setAllWallpaperIds(staticWallpapers.map(w => w.id));
+    }
+  }, []);
 
   // 从 API 获取壁纸详情
   useEffect(() => {
@@ -209,6 +234,33 @@ export default function WallpaperDetailPage() {
     fetchWallpaper();
   }, [wallpaperId]);
 
+  // 获取相似壁纸 - 从 API 获取同分类壁纸
+  useEffect(() => {
+    if (!wallpaper) return;
+    
+    const fetchSimilar = async () => {
+      try {
+        const response = await fetch(`/api/wallpapers?page=1&limit=7&category=${wallpaper.category}`);
+        if (response.ok) {
+          const data = await response.json();
+          // 过滤掉当前壁纸，取前6张
+          const filtered = (data.wallpapers as Wallpaper[])
+            .filter(w => w.id !== wallpaper.id)
+            .slice(0, 6);
+          setSimilarWallpapers(filtered);
+        } else {
+          // API 失败，降级使用静态数据
+          setSimilarWallpapers(getSimilarWallpapers(wallpaper));
+        }
+      } catch {
+        // 降级使用静态数据
+        setSimilarWallpapers(getSimilarWallpapers(wallpaper));
+      }
+    };
+
+    fetchSimilar();
+  }, [wallpaper]);
+
   // 全屏预览状态
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [fullscreenDefaultRatio, setFullscreenDefaultRatio] = useState(false);
@@ -219,9 +271,6 @@ export default function WallpaperDetailPage() {
   const [showResMenu, setShowResMenu] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [mediumError, setMediumError] = useState(false);
-
-  // 获取所有壁纸ID列表用于切换
-  const allWallpaperIds = wallpapers.map(w => w.id);
 
   useEffect(() => {
     if (wallpaper) {

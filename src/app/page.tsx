@@ -277,6 +277,10 @@ export default function HomePage() {
   useEffect(() => {
     cachedWallpapers = allWallpapers;
     cachedPage = page;
+    // 同步到 sessionStorage 供详情页使用
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('allWallpaperIds', JSON.stringify(allWallpapers.map(w => w.id)));
+    }
   }, [allWallpapers, page]);
 
   // 加载更多壁纸 - 调用 API
