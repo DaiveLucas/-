@@ -30,6 +30,20 @@ interface WallpapersApiResponse {
 let cachedWallpapers: Wallpaper[] | null = null;
 let cachedPage = 1;
 
+// 数据格式转换函数 - 将数据库字段转换为前端 Wallpaper 类型
+function mapWallpaper(w: Record<string, unknown>): Wallpaper {
+  const { width, height, image_url, thumbnail_url, medium_url, source_id, created_at, ...rest } = w;
+  return {
+    ...rest,
+    imageUrl: image_url as string,
+    thumbnailUrl: thumbnail_url as string,
+    mediumUrl: medium_url as string | undefined,
+    sourceId: source_id as string | undefined,
+    createdAt: created_at as string,
+    resolution: { width: width as number, height: height as number },
+  } as unknown as Wallpaper;
+}
+
 // 精简搜索框组件 - 紧凑设计
 function SearchBar({
   searchQuery,
@@ -258,10 +272,7 @@ export default function HomePage() {
         
         if (error) throw error;
         
-        const formatted = (data || []).map(w => {
-          const { width, height, ...rest } = w;
-          return { ...rest, resolution: { width, height } };
-        });
+        const formatted = (data || []).map(w => mapWallpaper(w));
         
         setAllWallpapers(formatted.length > 0 ? formatted : staticWallpapers);
         setHasMore(formatted.length > 0);
@@ -312,10 +323,7 @@ export default function HomePage() {
       
       if (error) throw error;
       
-      const formatted = (data || []).map(w => {
-        const { width, height, ...rest } = w;
-        return { ...rest, resolution: { width, height } };
-      });
+      const formatted = (data || []).map(w => mapWallpaper(w));
       
       if (formatted.length === 0) {
         setHasMore(false);
@@ -398,11 +406,8 @@ export default function HomePage() {
           .or('title.ilike.%' + searchQuery.trim() + '%,tags.cs.{' + searchQuery.trim() + '}')
           .limit(50);
         if (error) throw error;
-        const formatted = (data || []).map(w => {
-          const { width, height, ...rest } = w as { width: number; height: number; [key: string]: unknown };
-          return { ...rest, resolution: { width, height } };
-        });
-        setSearchResults(formatted as Wallpaper[]);
+        const formatted = (data || []).map(w => mapWallpaper(w)) as Wallpaper[];
+        setSearchResults(formatted);
       } catch (error) {
         console.error('Search API failed, using local search:', error);
         // 降级方案：使用本地搜索
