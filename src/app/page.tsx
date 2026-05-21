@@ -152,10 +152,10 @@ const WallpaperCard = memo(function WallpaperCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative overflow-hidden rounded-lg bg-muted/30">
+      <div className="relative overflow-hidden bg-muted/30">
         {/* 骨架/模糊占位 */}
         {!isLoaded && !hasError && (
-          <div className="w-full aspect-[4/3] bg-muted animate-pulse rounded-lg" />
+          <div className="w-full aspect-[4/3] bg-muted animate-pulse" />
         )}
         
         {/* 加载失败占位 */}
@@ -174,7 +174,7 @@ const WallpaperCard = memo(function WallpaperCard({
             loading="lazy"
             onLoad={() => setIsLoaded(true)}
             onError={() => setHasError(true)}
-            className={`w-full h-auto object-contain bg-muted/20 rounded-lg transition-all duration-500 ${
+            className={`w-full h-auto object-contain bg-muted/20 transition-all duration-500 ${
               isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
             } ${
               isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
@@ -184,7 +184,7 @@ const WallpaperCard = memo(function WallpaperCard({
 
         {/* Hover 遮罩 - 黑色半透明 */}
         <div
-          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 rounded-lg ${
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
             isHovered ? 'opacity-100' : 'opacity-0'
           }`}
         >
@@ -537,7 +537,7 @@ export default function HomePage() {
             
             {/* 瀑布流网格 */}
             {!isSearching && (
-              <div className="columns-2 md:columns-3 lg:columns-4 gap-3 w-full px-4 max-w-7xl mx-auto">
+              <div className="columns-1 md:columns-2 lg:columns-3 gap-3 w-full px-4 max-w-7xl mx-auto">
                 {filteredWallpapers.map((wallpaper) => (
                   <WallpaperCard
                     key={wallpaper.id}
