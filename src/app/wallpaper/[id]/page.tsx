@@ -169,8 +169,6 @@ export default function WallpaperDetailPage() {
   const params = useParams();
   const router = useRouter();
   const wallpaperId = params.id as string;
-  const wallpaper = getWallpaperById(wallpaperId);
-  const similarWallpapers = wallpaper ? getSimilarWallpapers(wallpaper) : [];
   const { isFavorite, toggleFavorite, favoriteCount } = useFavorites();
 
   // 页面淡入效果
@@ -178,6 +176,38 @@ export default function WallpaperDetailPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // 壁纸数据状态 - 优先从 API 获取
+  const [wallpaper, setWallpaper] = useState<typeof wallpapers[0] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const similarWallpapers = wallpaper ? getSimilarWallpapers(wallpaper) : [];
+
+  // 从 API 获取壁纸详情
+  useEffect(() => {
+    const fetchWallpaper = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/wallpapers/${wallpaperId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setWallpaper(data.wallpaper);
+        } else {
+          // API 失败，降级使用静态数据
+          const fallback = getWallpaperById(wallpaperId);
+          setWallpaper(fallback || null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch wallpaper from API, using fallback:', error);
+        // 降级方案
+        const fallback = getWallpaperById(wallpaperId);
+        setWallpaper(fallback || null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWallpaper();
+  }, [wallpaperId]);
 
   // 全屏预览状态
   const [showFullscreen, setShowFullscreen] = useState(false);
@@ -211,6 +241,15 @@ export default function WallpaperDetailPage() {
       router.push(`/wallpaper/${allWallpaperIds[currentIndex + 1]}`);
     }
   };
+
+  // 加载状态
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   if (!wallpaper) {
     return (
@@ -248,6 +287,12 @@ export default function WallpaperDetailPage() {
   const handleDownload = async (width?: number) => {
     const url = width ? getUrlForResolution(width) : wallpaper.imageUrl;
     await downloadImage(url, `${wallpaper.title}.jpg`, wallpaper);
+    // 调用下载计数 API
+    try {
+      await fetch(`/api/wallpapers/${wallpaper.id}/download`, { method: 'POST' });
+    } catch (error) {
+      console.error('Failed to update download count:', error);
+    }
     setShowResMenu(false);
   };
 

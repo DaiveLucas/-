@@ -79,7 +79,21 @@ export default function Sidebar({ searchInputRef }: SidebarProps) {
     setShowLangMenu(false);
   };
 
-  const handleRandomWallpaper = () => {
+  const handleRandomWallpaper = async () => {
+    try {
+      // 优先从 API 获取随机壁纸
+      const response = await fetch('/api/wallpapers/random');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.wallpaper) {
+          router.push(`/wallpaper/${data.wallpaper.id}`);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Random API failed, using fallback:', error);
+    }
+    // 降级方案：使用本地数据
     const allWallpapers = getAllWallpapers();
     const randomIndex = Math.floor(Math.random() * allWallpapers.length);
     const randomWallpaper = allWallpapers[randomIndex];

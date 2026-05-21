@@ -7,18 +7,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFavorites } from '@/hooks/use-favorites';
 import {
-  wallpapers,
+  wallpapers as staticWallpapers,
   categories,
   getPopularWallpapers,
   getLatestWallpapers,
-  searchWallpapers,
-  generateWallpaperPage,
+  searchWallpapers as localSearchWallpapers,
 } from '@/lib/wallpaper-data';
 import { downloadImage } from '@/lib/download';
 import type { WallpaperCategory, Wallpaper } from '@/types/wallpaper';
 import Sidebar from '@/components/Sidebar';
 import { Footer } from '@/components/Footer';
 import { Navbar } from '@/components/Navbar';
+
+// API 响应类型
+interface WallpapersApiResponse {
+  wallpapers: Wallpaper[];
+  total: number;
+  page: number;
+  hasMore: boolean;
+}
 
 // 模块级缓存 - 保持已加载的数据，避免返回首页时重新加载
 let cachedWallpapers: Wallpaper[] | null = null;
@@ -232,7 +239,7 @@ export default function HomePage() {
   // 无限滚动状态 - 使用缓存初始化
   const [page, setPage] = useState(cachedPage);
   const [allWallpapers, setAllWallpapers] = useState<Wallpaper[]>(
-    cachedWallpapers || wallpapers
+    cachedWallpapers || staticWallpapers
   );
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -247,7 +254,7 @@ export default function HomePage() {
     cachedPage = page;
   }, [allWallpapers, page]);
 
-  // 加载更多壁纸
+  // 加载更多壁纸 - 调用 API
   const loadMore = useCallback(async () => {
     // 加锁机制：正在加载 / 没有更多 / 1秒内已加载过
     const now = Date.now();
@@ -261,18 +268,27 @@ export default function HomePage() {
     setIsLoading(true);
     lastLoadTimeRef.current = now;
     
-    // 模拟网络延迟
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    
-    const nextPage = page + 1;
-    const newWallpapers = generateWallpaperPage(nextPage);
-    
-    if (newWallpapers.length === 0) {
+    try {
+      const nextPage = page + 1;
+      const apiUrl = `/api/wallpapers?page=${nextPage}&limit=16`;
+      
+      const response = await fetch(apiUrl);
+      if (!response.ok) throw new Error('API failed');
+      
+      const data: WallpapersApiResponse = await response.json();
+      
+      if (data.wallpapers.length === 0) {
+        setHasMore(false);
+      } else {
+        // 追加数据，不刷新页面
+        setAllWallpapers((prev) => [...prev, ...data.wallpapers]);
+        setPage(nextPage);
+        setHasMore(data.hasMore);
+      }
+    } catch (error) {
+      console.error('Failed to load wallpapers from API, using fallback:', error);
+      // 降级方案：API 失败时停止加载更多
       setHasMore(false);
-    } else {
-      // 追加数据，不刷新页面
-      setAllWallpapers((prev) => [...prev, ...newWallpapers]);
-      setPage(nextPage);
     }
     
     setIsLoading(false);
@@ -318,12 +334,53 @@ export default function HomePage() {
     searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  // 搜索状态
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Wallpaper[]>([]);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 搜索 API 调用（带防抖）
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // 防抖：500ms 后才发请求
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    setIsSearching(true);
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/wallpapers/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        if (!response.ok) throw new Error('Search API failed');
+        
+        const data = await response.json();
+        setSearchResults(data.wallpapers || []);
+      } catch (error) {
+        console.error('Search API failed, using local search:', error);
+        // 降级方案：使用本地搜索
+        const results = localSearchWallpapers(searchQuery, allWallpapers);
+        setSearchResults(results);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchQuery, allWallpapers]);
+
   // 根据分类和搜索过滤壁纸
   const filteredWallpapers = useMemo(() => {
-    // 先根据搜索词筛选（传入动态壁纸列表）
-    let result = searchQuery.trim()
-      ? searchWallpapers(searchQuery, allWallpapers)
-      : allWallpapers;
+    // 如果有搜索结果，使用搜索结果
+    let result = searchQuery.trim() ? searchResults : allWallpapers;
 
     // 再根据分类筛选（热门和最新需要特殊处理）
     if (activeCategory === 'popular') {
@@ -343,7 +400,7 @@ export default function HomePage() {
     }
 
     return result;
-  }, [activeCategory, searchQuery, allWallpapers]);
+  }, [activeCategory, searchQuery, allWallpapers, searchResults]);
 
   return (
     <div className={`min-h-screen bg-background flex flex-col transition-opacity duration-200 ease-out ${isMounted ? 'opacity-100' : 'opacity-0'}`}>
@@ -373,17 +430,22 @@ export default function HomePage() {
             onCategoryChange={setActiveCategory}
           />
           <div className="py-3 pb-20 md:pb-6">
+            {/* 搜索加载状态 */}
+            {isSearching && <SkeletonGrid />}
+            
             {/* 瀑布流网格 - 固定3列 */}
-            <div className="masonry-grid w-full px-6 max-w-7xl mx-auto">
-              {filteredWallpapers.map((wallpaper) => (
-                <WallpaperCard
-                  key={wallpaper.id}
-                  wallpaper={wallpaper}
-                  isFavorite={!!favorites[wallpaper.id]}
-                  onToggleFavorite={() => toggleFavorite(wallpaper.id)}
-                />
-              ))}
-            </div>
+            {!isSearching && (
+              <div className="masonry-grid w-full px-6 max-w-7xl mx-auto">
+                {filteredWallpapers.map((wallpaper) => (
+                  <WallpaperCard
+                    key={wallpaper.id}
+                    wallpaper={wallpaper}
+                    isFavorite={!!favorites[wallpaper.id]}
+                    onToggleFavorite={() => toggleFavorite(wallpaper.id)}
+                  />
+                ))}
+              </div>
+            )}
             
             {/* 无限滚动哨兵元素 */}
             {!searchQuery && activeCategory === 'all' && (
@@ -399,7 +461,7 @@ export default function HomePage() {
             )}
             
             {/* 筛选模式下的提示 */}
-            {(searchQuery || activeCategory !== 'all') && (
+            {!isSearching && (searchQuery || activeCategory !== 'all') && (
               <div className="text-center py-8 text-muted-foreground text-sm">
                 已展示 {filteredWallpapers.length} 张壁纸
               </div>
