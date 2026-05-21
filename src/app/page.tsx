@@ -427,7 +427,7 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<Wallpaper[]>([]);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 搜索 API 调用（带防抖）
+  // 搜索 API 调用（带防抖）- 同时搜索本地和 Wallhaven
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -443,16 +443,45 @@ export default function HomePage() {
     setIsSearching(true);
     searchDebounceRef.current = setTimeout(async () => {
       try {
-        const { data, error } = await supabase
-          .from('wallpapers')
-          .select('*')
-          .or('title.ilike.%' + searchQuery.trim().replace(/'/g, "''") + '%,tags.cs.{' + searchQuery.trim().replace(/'/g, "''") + '}')
-          .limit(50);
-        if (error) throw error;
-        const formatted = (data || []).map(w => mapWallpaper(w)) as Wallpaper[];
-        setSearchResults(formatted);
+        // 并行搜索本地 Supabase 和 Wallhaven
+        const [supabaseResult, wallhavenResult] = await Promise.allSettled([
+          // 本地 Supabase 搜索
+          supabase
+            .from('wallpapers')
+            .select('*')
+            .or('title.ilike.%' + searchQuery.trim().replace(/'/g, "''") + '%,tags.cs.{' + searchQuery.trim().replace(/'/g, "''") + '}')
+            .limit(30),
+          // Wallhaven 搜索
+          fetch(`/api/wallhaven/search?q=${encodeURIComponent(searchQuery.trim())}&page=1`).then(r => r.json())
+        ]);
+
+        // 处理本地结果
+        const localWallpapers: Wallpaper[] = 
+          supabaseResult.status === 'fulfilled' && supabaseResult.value.data
+            ? supabaseResult.value.data.map(w => mapWallpaper(w)) as Wallpaper[]
+            : [];
+
+        // 处理 Wallhaven 结果
+        const wallhavenWallpapers: Wallpaper[] = 
+          wallhavenResult.status === 'fulfilled' && wallhavenResult.value.wallpapers
+            ? wallhavenResult.value.wallpapers
+            : [];
+
+        // 合并结果：本地结果在前，Wallhaven 结果在后
+        // 去重（按图片 URL 去重）
+        const seenUrls = new Set<string>();
+        const merged: Wallpaper[] = [];
+        
+        for (const w of [...localWallpapers, ...wallhavenWallpapers]) {
+          if (!seenUrls.has(w.imageUrl)) {
+            seenUrls.add(w.imageUrl);
+            merged.push(w);
+          }
+        }
+
+        setSearchResults(merged);
       } catch (error) {
-        console.error('Search API failed, using local search:', error);
+        console.error('Search failed:', error);
         // 降级方案：使用本地搜索
         const results = localSearchWallpapers(searchQuery, allWallpapers);
         setSearchResults(results);
