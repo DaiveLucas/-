@@ -259,8 +259,8 @@ export default function HomePage() {
         if (!response.ok) throw new Error('API failed');
         
         const data: WallpapersApiResponse = await response.json();
-        setAllWallpapers(data.wallpapers);
-        setHasMore(data.hasMore);
+        setAllWallpapers(data.wallpapers.length > 0 ? data.wallpapers : staticWallpapers);
+        setHasMore(data.wallpapers.length > 0 ? data.hasMore : false);
         setPage(1);
       } catch (error) {
         console.error('Failed to fetch initial wallpapers, using fallback:', error);
