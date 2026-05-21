@@ -33,8 +33,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // 转换为前端 Wallpaper 类型格式
+    const formattedWallpapers = (data || []).map(w => {
+      const { width, height, ...rest } = w
+      return { ...rest, resolution: { width, height } }
+    })
+
     return NextResponse.json({
-      wallpapers: data || []
+      wallpapers: formattedWallpapers
     })
   } catch (error) {
     console.error('API error:', error)

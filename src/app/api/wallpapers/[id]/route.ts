@@ -36,7 +36,11 @@ export async function GET(
       .update({ views: (data.views || 0) + 1 })
       .eq('id', id);
 
-    return NextResponse.json({ wallpaper: data });
+    // 转换为前端 Wallpaper 类型格式
+    const { width, height, ...rest } = data
+    const formattedWallpaper = { ...rest, resolution: { width, height } }
+
+    return NextResponse.json({ wallpaper: formattedWallpaper });
   } catch (error) {
     console.error('Error fetching wallpaper:', error);
     return NextResponse.json(
