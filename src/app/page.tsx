@@ -7,12 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFavorites } from '@/hooks/use-favorites';
 import {
-  wallpapers as staticWallpapers,
   categories,
-  getPopularWallpapers,
-  getLatestWallpapers,
   searchWallpapers as localSearchWallpapers,
 } from '@/lib/wallpaper-data';
+import { wallpapers as staticWallpapers } from '@/lib/wallpaper-data';
 import { downloadImage } from '@/lib/download';
 import type { WallpaperCategory, Wallpaper } from '@/types/wallpaper';
 import Sidebar from '@/components/Sidebar';
@@ -239,7 +237,7 @@ export default function HomePage() {
   // 无限滚动状态 - 使用缓存初始化
   const [page, setPage] = useState(cachedPage);
   const [allWallpapers, setAllWallpapers] = useState<Wallpaper[]>(
-    cachedWallpapers || staticWallpapers
+    cachedWallpapers || []
   );
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -247,6 +245,33 @@ export default function HomePage() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const lastLoadTimeRef = useRef(0); // 防抖时间戳
   const isInitializedRef = useRef(false); // 标记是否已初始化
+
+  // 首次挂载时从 API 获取第一页数据
+  useEffect(() => {
+    if (cachedWallpapers && cachedWallpapers.length > 0) {
+      // 已有缓存数据，不需要重新加载
+      return;
+    }
+    
+    const fetchInitialData = async () => {
+      try {
+        const response = await fetch('/api/wallpapers?page=1&limit=16');
+        if (!response.ok) throw new Error('API failed');
+        
+        const data: WallpapersApiResponse = await response.json();
+        setAllWallpapers(data.wallpapers);
+        setHasMore(data.hasMore);
+        setPage(1);
+      } catch (error) {
+        console.error('Failed to fetch initial wallpapers, using fallback:', error);
+        // 降级方案：使用静态数据
+        setAllWallpapers(staticWallpapers);
+        setHasMore(false);
+      }
+    };
+    
+    fetchInitialData();
+  }, []);
 
   // 同步更新缓存
   useEffect(() => {
@@ -384,17 +409,17 @@ export default function HomePage() {
 
     // 再根据分类筛选（热门和最新需要特殊处理）
     if (activeCategory === 'popular') {
-      result = searchQuery.trim()
-        ? getPopularWallpapers().filter((w) =>
-            result.some((r) => r.id === w.id)
-          )
-        : getPopularWallpapers();
+      // 从 allWallpapers 中按 downloads 降序排序
+      const sorted = [...result].sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+      result = sorted;
     } else if (activeCategory === 'latest') {
-      result = searchQuery.trim()
-        ? getLatestWallpapers().filter((w) =>
-            result.some((r) => r.id === w.id)
-          )
-        : getLatestWallpapers();
+      // 从 allWallpapers 中按 createdAt 降序排序
+      const sorted = [...result].sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+      result = sorted;
     } else if (activeCategory !== 'all') {
       result = result.filter((w) => w.category === activeCategory);
     }

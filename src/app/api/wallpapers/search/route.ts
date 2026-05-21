@@ -14,13 +14,15 @@ export async function GET(request: NextRequest) {
     }
 
     const keyword = q.trim()
+    // 过滤特殊字符，防止SQL注入
+    const safeKeyword = keyword.replace(/[%_{}'"\\]/g, '')
 
     // 搜索标题或标签
     // .or() 组合条件：标题模糊匹配 OR 标签数组包含关键词
     const { data, error } = await supabaseAdmin
       .from('wallpapers')
       .select('*')
-      .or(`title.ilike.%${keyword}%,tags.cs.{${keyword}}`)
+      .or(`title.ilike.%${safeKeyword}%,tags.cs.{${safeKeyword}}`)
       .limit(50)
 
     if (error) {
