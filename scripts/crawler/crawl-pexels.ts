@@ -67,13 +67,9 @@ async function fetchPexels(page: number = 1, perPage: number = 30): Promise<any[
       tags: randomPick(TAG_POOL, 4),
       downloads: 0,
       views: 0,
-      likes: 0,
       thumbnail_url: photo.src.tiny,
       medium_url: photo.src.medium,
       image_url: photo.src.large,
-      color: photo.avg_color || '#ffffff',
-      photographer: photo.photographer || 'Unknown',
-      photographer_url: photo.photographer_url || '',
       created_at: new Date().toISOString(),
     };
   });
