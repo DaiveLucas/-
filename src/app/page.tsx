@@ -152,10 +152,10 @@ const WallpaperCard = memo(function WallpaperCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative overflow-hidden rounded-lg bg-muted/30">
+      <div className="relative overflow-hidden rounded-lg bg-muted/30" style={{ aspectRatio: `${wallpaper.resolution.width}/${wallpaper.resolution.height}` }}>
         {/* 骨架/模糊占位 */}
         {!isLoaded && !hasError && (
-          <div className="absolute inset-0 bg-muted animate-pulse" />
+          <div className="absolute inset-0 bg-muted animate-pulse" style={{ aspectRatio: `${wallpaper.resolution.width}/${wallpaper.resolution.height}` }} />
         )}
         
         {/* 加载失败占位 */}
@@ -259,14 +259,23 @@ export default function HomePage() {
     }
     setIsLoading(true);
     try {
+      const categoryMap: Record<string, string[]> = {
+        nature: ['landscape', 'healing'],
+        anime: ['anime'],
+        abstract: ['abstract'],
+        scifi: ['cyberpunk', 'space'],
+        minimal: ['minimalist'],
+      };
+      const dbCategories = categoryMap[category] || [category];
       const { data, error } = await supabase
         .from('wallpapers')
         .select('*')
-        .eq('category', category)
+        .in('category', dbCategories)
         .limit(50);
       if (error) throw error;
       const formatted = (data || []).map(w => mapWallpaper(w));
-      setAllWallpapers(formatted.length > 0 ? formatted : staticWallpapers.filter(w => w.category === category));
+      const unique = Array.from(new Map(formatted.map(w => [w.id, w])).values());
+      setAllWallpapers(unique.length > 0 ? unique : staticWallpapers.filter(w => w.category === category));
       setHasMore(false);
     } catch (error) {
       console.error('Failed to fetch category:', error);
@@ -297,18 +306,18 @@ export default function HomePage() {
     
     const fetchInitialData = async () => {
       try {
-        const { data, error } = await supabase
-          .from('wallpapers')
-          .select('*')
-          .order('id', { ascending: true })
-          .range(0, 15);
+        const { data: landscapeData } = await supabase.from('wallpapers').select('*').eq('category', 'landscape').limit(4);
+        const { data: healingData } = await supabase.from('wallpapers').select('*').eq('category', 'healing').limit(4);
+        const { data: spaceData } = await supabase.from('wallpapers').select('*').eq('category', 'space').limit(4);
+        const { data: abstractData } = await supabase.from('wallpapers').select('*').eq('category', 'abstract').limit(4);
+        const { data: cyberpunkData } = await supabase.from('wallpapers').select('*').eq('category', 'cyberpunk').limit(4);
+        const { data: minimalistData } = await supabase.from('wallpapers').select('*').eq('category', 'minimalist').limit(4);
+        const { data: animeData } = await supabase.from('wallpapers').select('*').eq('category', 'anime').limit(4);
+        const allData = [...(landscapeData||[]), ...(healingData||[]), ...(spaceData||[]), ...(abstractData||[]), ...(cyberpunkData||[]), ...(minimalistData||[]), ...(animeData||[])];
+        const formatted = allData.map(w => mapWallpaper(w));
         
-        if (error) throw error;
-        
-        const formatted = (data || []).map(w => mapWallpaper(w));
-        
-        const sorted = formatted.length > 0 ? shuffleArray(formatted) : staticWallpapers;
-        setAllWallpapers(sorted);
+        const unique = Array.from(new Map(formatted.map(w => [w.id, w])).values());
+        setAllWallpapers(unique.length > 0 ? shuffleArray(unique) : staticWallpapers);
         setHasMore(formatted.length > 0);
         setPage(1);
       } catch (error) {
@@ -478,7 +487,15 @@ export default function HomePage() {
       });
       result = sorted;
     } else if (activeCategory !== 'all') {
-      result = result.filter((w) => w.category === activeCategory);
+      const categoryMap: Record<string, string[]> = {
+        nature: ['landscape', 'healing'],
+        anime: ['anime'],
+        abstract: ['abstract'],
+        scifi: ['cyberpunk', 'space'],
+        minimal: ['minimalist'],
+      };
+      const dbCategories = categoryMap[activeCategory] || [activeCategory];
+      result = result.filter(w => dbCategories.includes(w.category));
     }
 
     return result;

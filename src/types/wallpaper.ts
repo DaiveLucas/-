@@ -3,13 +3,11 @@ export type WallpaperCategory =
   | 'all'
   | 'popular'
   | 'latest'
+  | 'nature'
   | 'anime'
-  | 'landscape'
-  | 'healing'
-  | 'cyberpunk'
-  | 'minimalist'
-  | 'space'
-  | 'abstract';
+  | 'abstract'
+  | 'scifi'
+  | 'minimal';
 
 // 分类配置
 export interface CategoryConfig {
@@ -18,6 +16,9 @@ export interface CategoryConfig {
   icon?: string;
 }
 
+// 数据库中的原始分类（用于数据存储）
+export type DatabaseCategory = 'anime' | 'landscape' | 'healing' | 'cyberpunk' | 'minimalist' | 'space' | 'abstract';
+
 // 壁纸数据
 export interface Wallpaper {
   id: string;
@@ -25,7 +26,7 @@ export interface Wallpaper {
   imageUrl: string;
   thumbnailUrl: string;
   mediumUrl?: string; // 中等尺寸（宽800），用于详情页首屏
-  category: WallpaperCategory;
+  category: DatabaseCategory; // 使用数据库分类
   tags: string[];
   resolution: {
     width: number;

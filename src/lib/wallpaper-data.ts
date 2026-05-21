@@ -1,17 +1,15 @@
-import type { Wallpaper, CategoryConfig, WallpaperCategory } from '@/types/wallpaper';
+import type { Wallpaper, CategoryConfig, WallpaperCategory, DatabaseCategory } from '@/types/wallpaper';
 
 // 分类配置
 export const categories: CategoryConfig[] = [
   { id: 'all', label: '全部' },
   { id: 'popular', label: '热门' },
   { id: 'latest', label: '最新' },
+  { id: 'nature', label: '自然' },
   { id: 'anime', label: '动漫' },
-  { id: 'landscape', label: '风景' },
-  { id: 'healing', label: '治愈系' },
-  { id: 'cyberpunk', label: '赛博朋克' },
-  { id: 'minimalist', label: '极简' },
-  { id: 'space', label: '太空' },
   { id: 'abstract', label: '抽象' },
+  { id: 'scifi', label: '科幻' },
+  { id: 'minimal', label: '极简' },
 ];
 
 // Mock 壁纸数据（三级尺寸：thumbnail 200px, medium 800px, original 1920px）
@@ -339,13 +337,10 @@ const ratioConfigs = [
 ];
 
 // 分类列表（用于随机分配）
-const categoryPool: WallpaperCategory[] = ['anime', 'landscape', 'healing', 'cyberpunk', 'minimalist', 'space', 'abstract'];
+const categoryPool: DatabaseCategory[] = ['anime', 'landscape', 'healing', 'cyberpunk', 'minimalist', 'space', 'abstract'];
 
 // 标签池（按分类）
-const tagsPool: Record<WallpaperCategory, string[]> = {
-  all: ['全部', '精选', '推荐', '热门'],
-  popular: ['热门', '受欢迎', '高下载', '精选'],
-  latest: ['最新', '新上线', '近期', '新鲜'],
+const tagsPool: Record<DatabaseCategory, string[]> = {
   anime: ['动漫', '唯美', '梦幻', '少女', '治愈', '二次元'],
   landscape: ['自然风景', '山川', '海洋', '森林', '日落', '湖泊'],
   healing: ['治愈系', '温馨', '舒适', '宁静', '柔和', '清新'],
