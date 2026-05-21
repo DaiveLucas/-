@@ -17,6 +17,21 @@ import {
 } from 'lucide-react';
 import { wallpapers, getAllWallpapers } from '@/lib/wallpaper-data';
 import { supabase } from '@/lib/supabase';
+import type { Wallpaper } from '@/types/wallpaper';
+
+// 数据格式转换函数
+function mapWallpaper(w: Record<string, unknown>): Wallpaper {
+  const { width, height, image_url, thumbnail_url, medium_url, source_id, created_at, ...rest } = w;
+  return {
+    ...rest,
+    imageUrl: image_url as string,
+    thumbnailUrl: thumbnail_url as string,
+    mediumUrl: medium_url as string | undefined,
+    sourceId: source_id as string | undefined,
+    createdAt: created_at as string,
+    resolution: { width: width as number, height: height as number },
+  } as unknown as Wallpaper;
+}
 
 interface SidebarProps {
   searchInputRef?: React.RefObject<HTMLDivElement | null>;
@@ -82,22 +97,20 @@ export default function Sidebar({ searchInputRef }: SidebarProps) {
 
   const handleRandomWallpaper = async () => {
     try {
-      // 直接用 Supabase 查询随机壁纸
       const { count } = await supabase.from('wallpapers').select('', { count: 'exact', head: true });
       const randomOffset = Math.floor(Math.random() * (count || 1));
       const { data } = await supabase.from('wallpapers').select('*').range(randomOffset, randomOffset);
       if (data && data.length > 0) {
-        router.push('/wallpaper/' + data[0].id);
+        const w = mapWallpaper(data[0]);
+        router.push('/wallpaper/' + w.id);
         return;
       }
     } catch (error) {
-      console.error('Random query failed, using fallback:', error);
+      console.error('Random wallpaper failed:', error);
     }
-    // 降级方案：使用本地数据
-    const allWallpapers = getAllWallpapers();
-    const randomIndex = Math.floor(Math.random() * allWallpapers.length);
-    const randomWallpaper = allWallpapers[randomIndex];
-    router.push(`/wallpaper/${randomWallpaper.id}`);
+    const allW = getAllWallpapers();
+    const randomIndex = Math.floor(Math.random() * allW.length);
+    router.push('/wallpaper/' + allW[randomIndex].id);
   };
 
   const handleRefresh = () => {

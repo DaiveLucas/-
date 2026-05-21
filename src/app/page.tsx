@@ -148,14 +148,14 @@ const WallpaperCard = memo(function WallpaperCard({
   return (
     <Link
       href={`/wallpaper/${wallpaper.id}`}
-      className="mb-3 block"
+      className="mb-3 break-inside-avoid block"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative overflow-hidden bg-muted/30">
         {/* 骨架/模糊占位 */}
         {!isLoaded && !hasError && (
-          <div className="w-full aspect-[4/3] bg-muted animate-pulse" />
+          <div className="w-full h-48 bg-muted animate-pulse" />
         )}
         
         {/* 加载失败占位 */}
@@ -174,7 +174,7 @@ const WallpaperCard = memo(function WallpaperCard({
             loading="lazy"
             onLoad={() => setIsLoaded(true)}
             onError={() => setHasError(true)}
-            className={`w-full h-auto object-contain bg-muted/20 transition-all duration-500 ${
+            className={`w-full h-auto object-cover bg-muted/20 transition-all duration-500 ${
               isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
             } ${
               isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
@@ -446,7 +446,7 @@ export default function HomePage() {
         const { data, error } = await supabase
           .from('wallpapers')
           .select('*')
-          .or('title.ilike.%' + searchQuery.trim() + '%,tags.cs.{' + searchQuery.trim() + '}')
+          .or('title.ilike.%' + searchQuery.trim().replace(/'/g, "''") + '%,tags.cs.{' + searchQuery.trim().replace(/'/g, "''") + '}')
           .limit(50);
         if (error) throw error;
         const formatted = (data || []).map(w => mapWallpaper(w)) as Wallpaper[];

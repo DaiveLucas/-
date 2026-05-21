@@ -334,11 +334,7 @@ export default function WallpaperDetailPage() {
 
   // 获取指定分辨率的URL
   const getUrlForResolution = (width: number) => {
-    if (width >= 1920) return wallpaper.imageUrl;
-    const height = getHeightForWidth(width);
-    const idMatch = wallpaper.imageUrl.match(/\/id\/(\d+)\//);
-    const id = idMatch ? idMatch[1] : wallpaper.id;
-    return `https://picsum.photos/id/${id}/${width}/${height}`;
+    return wallpaper.imageUrl;
   };
 
   const handleDownload = async (width?: number) => {
