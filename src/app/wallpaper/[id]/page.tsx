@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -63,14 +63,14 @@ function FullscreenPreview({
   // 拖动相关 state
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [lastOffset, setLastOffset] = useState({ x: 0, y: 0 });
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const lastOffsetRef = useRef({ x: 0, y: 0 });
 
   // 重置加载状态当壁纸改变时
   useEffect(() => {
     setImageLoaded(false);
     setDragOffset({ x: 0, y: 0 });
-    setLastOffset({ x: 0, y: 0 });
+    lastOffsetRef.current = { x: 0, y: 0 };
   }, [wallpaper.id]);
 
   useEffect(() => {
@@ -102,6 +102,23 @@ function FullscreenPreview({
     } catch {
       // 浏览器不支持全屏
     }
+  };
+
+  // 拖动事件处理函数
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (imageOrientation !== 'landscape') return;
+    dragStartRef.current = { x: e.clientX - lastOffsetRef.current.x, y: e.clientY - lastOffsetRef.current.y };
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setDragOffset({ x: e.clientX - dragStartRef.current.x, y: e.clientY - dragStartRef.current.y });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    lastOffsetRef.current = { x: dragOffset.x, y: dragOffset.y };
   };
 
   if (!isOpen) return null;
@@ -145,26 +162,13 @@ function FullscreenPreview({
 
       {/* 图片容器 */}
       <div
-        className="relative w-full h-full overflow-hidden"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        className="relative w-full h-full overflow-hidden flex items-center justify-center"
+        style={{ cursor: isDragging ? 'grabbing' : (imageOrientation === 'landscape' ? 'grab' : 'default') }}
         onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => {
-          setDragStart({ x: e.clientX - lastOffset.x, y: e.clientY - lastOffset.y });
-          setIsDragging(true);
-        }}
-        onMouseMove={(e) => {
-          if (isDragging) {
-            setDragOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
-          }
-        }}
-        onMouseUp={() => {
-          setIsDragging(false);
-          setLastOffset({ x: dragOffset.x, y: dragOffset.y });
-        }}
-        onMouseLeave={() => {
-          setIsDragging(false);
-          setLastOffset({ x: dragOffset.x, y: dragOffset.y });
-        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
         {/* 缩略图（模糊占位） */}
         <img
@@ -173,7 +177,7 @@ function FullscreenPreview({
           className={`transition-all duration-500 ${
             imageOrientation === 'landscape'
               ? 'absolute inset-0 w-full h-full object-cover object-center'
-              : 'h-full w-auto max-w-full object-contain'
+              : 'h-full w-auto object-contain'
           }`}
           style={{
             filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
@@ -188,7 +192,7 @@ function FullscreenPreview({
           className={`transition-all duration-500 ${
             imageOrientation === 'landscape'
               ? 'absolute inset-0 w-full h-full object-cover object-center'
-              : 'h-full w-auto max-w-full object-contain'
+              : 'h-full w-auto object-contain'
           }`}
           style={{
             opacity: imageLoaded ? 1 : 0,
