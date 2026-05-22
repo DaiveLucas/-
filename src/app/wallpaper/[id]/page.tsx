@@ -60,7 +60,8 @@ function FullscreenPreview({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageOrientation, setImageOrientation] = useState<'landscape' | 'portrait'>('landscape');
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const [dragCursor, setDragCursor] = useState<'grab' | 'grabbing' | 'default'>('grab');
   const dragStartRef = useRef({ x: 0, y: 0 });
   const lastOffsetRef = useRef({ x: 0, y: 0 });
 
@@ -68,6 +69,8 @@ function FullscreenPreview({
     setImageLoaded(false);
     setDragOffset({ x: 0, y: 0 });
     lastOffsetRef.current = { x: 0, y: 0 };
+    isDraggingRef.current = false;
+    setDragCursor('grab');
   }, [wallpaper.id]);
 
   useEffect(() => {
@@ -100,19 +103,21 @@ function FullscreenPreview({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (imageOrientation !== 'landscape') return;
-    setIsDragging(true);
+    isDraggingRef.current = true;
+    setDragCursor('grabbing');
     dragStartRef.current = { x: e.clientX - lastOffsetRef.current.x, y: e.clientY - lastOffsetRef.current.y };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
     const newOffset = { x: e.clientX - dragStartRef.current.x, y: e.clientY - dragStartRef.current.y };
     setDragOffset(newOffset);
     lastOffsetRef.current = newOffset;
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
+    isDraggingRef.current = false;
+    setDragCursor(isLandscape ? 'grab' : 'default');
   };
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -151,7 +156,7 @@ function FullscreenPreview({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{ cursor: isLandscape ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+        style={{ cursor: isLandscape ? dragCursor : 'default' }}
       >
         <img
           src={wallpaper.thumbnailUrl}
@@ -160,6 +165,7 @@ function FullscreenPreview({
           style={{
             filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
             opacity: imageLoaded ? 0 : 1,
+            position: isLandscape ? undefined : (imageLoaded ? 'absolute' : 'relative'),
             transform: isLandscape ? `translate(${dragOffset.x}px, ${dragOffset.y}px)` : undefined,
             transition: 'filter 0.5s ease-out, opacity 0.5s ease-out',
           }}
@@ -170,6 +176,7 @@ function FullscreenPreview({
           className={isLandscape ? 'absolute inset-0 w-full h-full object-cover object-center' : 'h-full w-auto object-contain'}
           style={{
             opacity: imageLoaded ? 1 : 0,
+            position: isLandscape ? undefined : (imageLoaded ? 'relative' : 'absolute'),
             transform: isLandscape ? `translate(${dragOffset.x}px, ${dragOffset.y}px)` : undefined,
             transition: 'opacity 0.5s ease-out',
           }}
