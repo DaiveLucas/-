@@ -58,6 +58,7 @@ function FullscreenPreview({
 }) {
   const [isDesktopRatio, setIsDesktopRatio] = useState(defaultDesktopRatio);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageOrientation, setImageOrientation] = useState<'landscape' | 'portrait'>('landscape');
 
   // 重置加载状态当壁纸改变时
   useEffect(() => {
@@ -134,16 +135,20 @@ function FullscreenPreview({
         </button>
       )}
 
-      {/* 图片容器 - 限制最大尺寸 */}
+      {/* 图片容器 */}
       <div
-        className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center overflow-hidden"
+        className="relative w-full h-full overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 缩略图（模糊占位） */}
         <img
           src={wallpaper.thumbnailUrl}
           alt={wallpaper.title}
-          className="max-w-full max-h-[90vh] object-cover transition-all duration-500"
+          className={`transition-all duration-500 ${
+            imageOrientation === 'landscape'
+              ? 'absolute inset-0 w-full h-full object-cover object-center'
+              : 'h-full max-w-full object-contain mx-auto'
+          }`}
           style={{
             filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
             opacity: imageLoaded ? 0 : 1,
@@ -153,11 +158,21 @@ function FullscreenPreview({
         <img
           src={wallpaper.imageUrl}
           alt={wallpaper.title}
-          className="max-w-full max-h-[90vh] object-cover transition-all duration-500"
+          className={`transition-all duration-500 ${
+            imageOrientation === 'landscape'
+              ? 'absolute inset-0 w-full h-full object-cover object-center'
+              : 'h-full max-w-full object-contain mx-auto'
+          }`}
           style={{
             opacity: imageLoaded ? 1 : 0,
           }}
-          onLoad={() => setImageLoaded(true)}
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            const width = img.naturalWidth;
+            const height = img.naturalHeight;
+            setImageOrientation(width > height ? 'landscape' : 'portrait');
+            setImageLoaded(true);
+          }}
         />
       </div>
 
