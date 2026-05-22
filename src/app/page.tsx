@@ -148,24 +148,24 @@ const WallpaperCard = memo(function WallpaperCard({
   return (
     <Link
       href={`/wallpaper/${wallpaper.id}`}
-      className="mb-3 break-inside-avoid block"
+      className="mb-2 break-inside-avoid block"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative overflow-hidden bg-muted/30">
+      <div className="relative overflow-hidden bg-muted/30 rounded-lg">
         {/* 骨架/模糊占位 */}
         {!isLoaded && !hasError && (
-          <div className="w-full h-48 bg-muted animate-pulse" />
+          <div className="w-full h-48 bg-muted animate-pulse rounded-lg" />
         )}
-        
+
         {/* 加载失败占位 */}
         {hasError && (
-          <div className="absolute inset-0 bg-muted/50 flex flex-col items-center justify-center gap-2 min-h-[150px]">
+          <div className="absolute inset-0 bg-muted/50 flex flex-col items-center justify-center gap-2 min-h-[150px] rounded-lg">
             <ImageOff className="w-8 h-8 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">加载失败</span>
           </div>
         )}
-        
+
         {/* 图片 - 按原始比例展示 */}
         {!hasError && (
           <img
@@ -174,7 +174,7 @@ const WallpaperCard = memo(function WallpaperCard({
             loading="lazy"
             onLoad={() => setIsLoaded(true)}
             onError={() => setHasError(true)}
-            className={`w-full h-auto object-cover bg-muted/20 transition-all duration-500 ${
+            className={`w-full h-auto object-cover bg-muted/20 transition-all duration-500 rounded-lg ${
               isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
             } ${
               isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
@@ -184,7 +184,7 @@ const WallpaperCard = memo(function WallpaperCard({
 
         {/* Hover 遮罩 - 黑色半透明 */}
         <div
-          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 rounded-lg ${
             isHovered ? 'opacity-100' : 'opacity-0'
           }`}
         >
@@ -540,7 +540,7 @@ export default function HomePage() {
             
             {/* 瀑布流网格 */}
             {!isSearching && (
-              <div className="columns-1 md:columns-2 lg:columns-3 gap-3 w-full px-4 max-w-7xl mx-auto">
+              <div className="columns-3 gap-2 w-full px-5 max-w-[1800px] mx-auto">
                 {filteredWallpapers.map((wallpaper) => (
                   <WallpaperCard
                     key={wallpaper.id}
