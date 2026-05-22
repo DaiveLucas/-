@@ -99,7 +99,7 @@ function FullscreenPreview({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center overflow-hidden"
       onClick={onClose}
     >
       {/* 关闭按钮 */}
@@ -134,30 +134,28 @@ function FullscreenPreview({
         </button>
       )}
 
-      {/* 图片容器 - 铺满全屏 */}
+      {/* 图片容器 - 限制最大尺寸 */}
       <div
-        className="relative w-full h-full flex items-center justify-center"
+        className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 缩略图（模糊占位） */}
         <img
           src={wallpaper.thumbnailUrl}
           alt={wallpaper.title}
-          className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
+          className="w-auto h-auto max-w-full max-h-[90vh] object-contain transition-all duration-500"
           style={{
             filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
             opacity: imageLoaded ? 0 : 1,
-            objectPosition: 'center',
           }}
         />
         {/* 原图 */}
         <img
           src={wallpaper.imageUrl}
           alt={wallpaper.title}
-          className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
+          className="w-auto h-auto max-w-full max-h-[90vh] object-contain transition-all duration-500"
           style={{
             opacity: imageLoaded ? 1 : 0,
-            objectPosition: 'center',
           }}
           onLoad={() => setImageLoaded(true)}
         />
