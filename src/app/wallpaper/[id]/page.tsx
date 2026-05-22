@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -44,9 +44,19 @@ function FullscreenPreview({
   const [isDesktopRatio, setIsDesktopRatio] = useState(defaultDesktopRatio);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // 重置加载状态当壁纸改变时
+  // 拖动相关 - 用useRef避免闭包延迟
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const offset = useRef({ x: 0, y: 0 });
+  const lastOffset = useRef({ x: 0, y: 0 });
+  const [dragTransform, setDragTransform] = useState('translate(0px, 0px)');
+
+  // 重置加载状态和拖动偏移当壁纸改变时
   useEffect(() => {
     setImageLoaded(false);
+    offset.current = { x: 0, y: 0 };
+    lastOffset.current = { x: 0, y: 0 };
+    setDragTransform('translate(0px, 0px)');
   }, [wallpaper.id]);
 
   useEffect(() => {
@@ -68,21 +78,51 @@ function FullscreenPreview({
     }
   };
 
+  // 拖动事件处理
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    dragStart.current = {
+      x: e.clientX - lastOffset.current.x,
+      y: e.clientY - lastOffset.current.y,
+    };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current) return;
+    const newX = e.clientX - dragStart.current.x;
+    const newY = e.clientY - dragStart.current.y;
+    offset.current = { x: newX, y: newY };
+    setDragTransform(`translate(${newX}px, ${newY}px)`);
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging.current) {
+      isDragging.current = false;
+      lastOffset.current = { ...offset.current };
+    }
+  };
+
+  // 判断图片是横版还是竖版
+  const isLandscape = wallpaper.resolution.width >= wallpaper.resolution.height;
+
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/95 overflow-hidden"
       onClick={onClose}
     >
       {/* 关闭按钮 */}
       <button
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
         className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
       >
         <X className="w-6 h-6 text-white" />
       </button>
-
       {/* 左右切换按钮 */}
       {hasPrev && (
         <button
@@ -90,7 +130,7 @@ function FullscreenPreview({
             e.stopPropagation();
             onPrev();
           }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
         >
           <ChevronLeft className="w-8 h-8 text-white" />
         </button>
@@ -101,45 +141,56 @@ function FullscreenPreview({
             e.stopPropagation();
             onNext();
           }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
         >
           <ChevronRight className="w-8 h-8 text-white" />
         </button>
       )}
-
-      {/* 图片容器 - 渐进式加载 */}
+      {/* 图片容器 - 撑满全屏 */}
       <div
-        className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center"
+        className="w-full h-full flex items-center justify-center overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        style={{ cursor: isDragging.current ? 'grabbing' : 'grab' }}
       >
         {/* 缩略图（模糊占位） */}
         <img
           src={wallpaper.thumbnailUrl}
           alt={wallpaper.title}
-          className={`max-w-full max-h-[90vh] object-contain transition-all duration-500 ${
-            isDesktopRatio ? 'aspect-video' : ''
-          }`}
+          className={isLandscape
+            ? 'w-full h-full object-cover'
+            : 'h-full max-w-full object-contain'
+          }
           style={{
             filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
             opacity: imageLoaded ? 0 : 1,
             position: imageLoaded ? 'absolute' : 'relative',
+            transform: dragTransform,
+            transition: isDragging.current ? 'none' : 'filter 0.5s ease-out, opacity 0.5s ease-out',
           }}
+          draggable={false}
         />
         {/* 原图 */}
         <img
           src={wallpaper.imageUrl}
           alt={wallpaper.title}
-          className={`max-w-full max-h-[90vh] object-contain transition-all duration-500 ${
-            isDesktopRatio ? 'aspect-video' : ''
-          }`}
+          className={isLandscape
+            ? 'w-full h-full object-cover'
+            : 'h-full max-w-full object-contain'
+          }
           style={{
             opacity: imageLoaded ? 1 : 0,
             position: imageLoaded ? 'relative' : 'absolute',
+            transform: dragTransform,
+            transition: isDragging.current ? 'none' : 'opacity 0.5s ease-out',
           }}
           onLoad={() => setImageLoaded(true)}
+          draggable={false}
         />
       </div>
-
       {/* 底部工具栏 */}
       <div
         className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm"
