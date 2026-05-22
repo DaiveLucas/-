@@ -59,10 +59,18 @@ function FullscreenPreview({
   const [isDesktopRatio, setIsDesktopRatio] = useState(defaultDesktopRatio);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageOrientation, setImageOrientation] = useState<'landscape' | 'portrait'>('landscape');
+  
+  // 拖动相关 state
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [lastOffset, setLastOffset] = useState({ x: 0, y: 0 });
 
   // 重置加载状态当壁纸改变时
   useEffect(() => {
     setImageLoaded(false);
+    setDragOffset({ x: 0, y: 0 });
+    setLastOffset({ x: 0, y: 0 });
   }, [wallpaper.id]);
 
   useEffect(() => {
@@ -138,7 +146,25 @@ function FullscreenPreview({
       {/* 图片容器 */}
       <div
         className="relative w-full h-full overflow-hidden"
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => {
+          setDragStart({ x: e.clientX - lastOffset.x, y: e.clientY - lastOffset.y });
+          setIsDragging(true);
+        }}
+        onMouseMove={(e) => {
+          if (isDragging) {
+            setDragOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+          }
+        }}
+        onMouseUp={() => {
+          setIsDragging(false);
+          setLastOffset({ x: dragOffset.x, y: dragOffset.y });
+        }}
+        onMouseLeave={() => {
+          setIsDragging(false);
+          setLastOffset({ x: dragOffset.x, y: dragOffset.y });
+        }}
       >
         {/* 缩略图（模糊占位） */}
         <img
@@ -147,11 +173,12 @@ function FullscreenPreview({
           className={`transition-all duration-500 ${
             imageOrientation === 'landscape'
               ? 'absolute inset-0 w-full h-full object-cover object-center'
-              : 'h-full max-w-full object-contain mx-auto'
+              : 'h-full w-auto max-w-full object-contain'
           }`}
           style={{
             filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
             opacity: imageLoaded ? 0 : 1,
+            transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
           }}
         />
         {/* 原图 */}
@@ -161,10 +188,11 @@ function FullscreenPreview({
           className={`transition-all duration-500 ${
             imageOrientation === 'landscape'
               ? 'absolute inset-0 w-full h-full object-cover object-center'
-              : 'h-full max-w-full object-contain mx-auto'
+              : 'h-full w-auto max-w-full object-contain'
           }`}
           style={{
             opacity: imageLoaded ? 1 : 0,
+            transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
           }}
           onLoad={(e) => {
             const img = e.currentTarget;
