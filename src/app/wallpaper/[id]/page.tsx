@@ -368,7 +368,7 @@ export default function WallpaperDetailPage() {
       </header>
 
       <main className="flex-1 md:ml-16 pt-16 md:pt-0">
-        <Navbar favoriteCount={favoriteCount} />
+        <Navbar />
 
         <div className="max-w-7xl mx-auto px-6 py-8 pb-20 md:pb-8">
           {/* 返回按钮 */}

@@ -519,7 +519,7 @@ export default function HomePage() {
       </header>
 
       <main className="flex-1 md:ml-16 pt-14 md:pt-0">
-        <Navbar favoriteCount={favoriteCount} onSearchClick={scrollToSearch} />
+        <Navbar onSearchClick={scrollToSearch} />
         <div className="flex-1">
           {/* 精简搜索框 - 紧贴分类栏上方 */}
           <SearchBar

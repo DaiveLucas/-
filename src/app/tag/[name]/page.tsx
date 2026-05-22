@@ -123,7 +123,7 @@ export default function TagPage() {
       
       {/* 主内容区 */}
       <main className="md:ml-16">
-        <Navbar favoriteCount={favoriteCount} />
+        <Navbar />
         
         {/* 标签信息 */}
         <div className="pt-8 pb-4 px-6">

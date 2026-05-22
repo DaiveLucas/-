@@ -71,7 +71,7 @@ export default function FavoritesPage() {
       </header>
 
       <main className="flex-1 md:ml-16 pt-20 md:pt-0">
-        <Navbar favoriteCount={favoriteCount} />
+        <Navbar />
 
         <div className="max-w-7xl mx-auto px-6 py-8 pb-24 md:pb-8">
           {/* 标题区 */}
