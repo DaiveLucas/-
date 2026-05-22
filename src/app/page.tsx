@@ -155,7 +155,10 @@ const WallpaperCard = memo(function WallpaperCard({
       <div className="relative overflow-hidden bg-muted/30 rounded-lg">
         {/* 骨架/模糊占位 */}
         {!isLoaded && !hasError && (
-          <div className="w-full min-h-[120px] bg-muted animate-pulse" />
+          <div 
+            className="w-full bg-muted animate-pulse rounded-lg" 
+            style={{ aspectRatio: `${wallpaper.resolution.width} / ${wallpaper.resolution.height}` }}
+          />
         )}
 
         {/* 加载失败占位 */}
@@ -169,12 +172,13 @@ const WallpaperCard = memo(function WallpaperCard({
         {/* 图片 - 按原始比例展示 */}
         {!hasError && (
           <img
-            src={wallpaper.thumbnailUrl}
+            src={wallpaper.mediumUrl || wallpaper.thumbnailUrl}
             alt={wallpaper.title}
             loading="lazy"
             onLoad={() => setIsLoaded(true)}
             onError={() => setHasError(true)}
-            className={`w-full h-auto bg-muted/20 transition-all duration-500 ${
+            style={{ aspectRatio: `${wallpaper.resolution.width} / ${wallpaper.resolution.height}` }}
+            className={`w-full h-auto bg-muted/20 rounded-lg transition-all duration-500 ${
               isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
             } ${
               isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
