@@ -75,6 +75,18 @@ function FullscreenPreview({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, onNext, onPrev, hasNext, hasPrev]);
 
+  // 全屏时隐藏滚动条
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   const handleEnterFullscreen = async () => {
     try {
       await document.documentElement.requestFullscreen();
