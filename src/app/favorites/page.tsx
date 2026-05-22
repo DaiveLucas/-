@@ -110,10 +110,14 @@ export default function FavoritesPage() {
               </div>
 
               {/* 收藏网格 */}
-              <div className="masonry-grid">
+              <div className="columns-1 md:columns-2 lg:columns-3 gap-3">
                 {favoriteWallpapers.map((wallpaper) => (
-                  <div key={wallpaper.id} className="masonry-item group">
-                    <div className="relative rounded-2xl overflow-hidden shadow-card hover:shadow-float transition-all duration-300 bg-muted">
+                  <Link
+                    key={wallpaper.id}
+                    href={`/wallpaper/${wallpaper.id}`}
+                    className="mb-3 break-inside-avoid block"
+                  >
+                    <div className="relative overflow-hidden bg-muted group">
                       {/* 加载失败显示 */}
                       {errorIds.has(wallpaper.id) ? (
                         <div className="w-full min-h-[150px] flex flex-col items-center justify-center gap-2 bg-muted/50">
@@ -141,15 +145,21 @@ export default function FavoritesPage() {
                               </h3>
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => removeFavorite(wallpaper.id)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    removeFavorite(wallpaper.id);
+                                  }}
                                   className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
                                 >
                                   <Trash2 className="w-4 h-4 text-white" />
                                 </button>
                                 <button
-                                  onClick={() =>
-                                    handleDownload(wallpaper.imageUrl, wallpaper.title)
-                                  }
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleDownload(wallpaper.imageUrl, wallpaper.title);
+                                  }}
                                   className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
                                 >
                                   <Download className="w-4 h-4 text-white" />
@@ -160,7 +170,7 @@ export default function FavoritesPage() {
                         </>
                       )}
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </>
