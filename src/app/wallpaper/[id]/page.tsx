@@ -116,8 +116,10 @@ function FullscreenPreview({
   };
 
   const handleMouseUp = () => {
-    isDraggingRef.current = false;
-    setDragCursor(isLandscape ? 'grab' : 'default');
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      setDragCursor('grab');
+    }
   };
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -150,7 +152,7 @@ function FullscreenPreview({
         </button>
       )}
       <div
-        className="w-full h-full flex items-center justify-center"
+        className="w-full h-full"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -158,37 +160,49 @@ function FullscreenPreview({
         onMouseLeave={handleMouseUp}
         style={{ cursor: isLandscape ? dragCursor : 'default' }}
       >
+        {/* 缩略图（模糊占位） - 横版和竖版都absolute，不影响布局 */}
         <img
           src={wallpaper.thumbnailUrl}
           alt={wallpaper.title}
-          className={isLandscape ? 'absolute inset-0 w-full h-full object-cover object-center' : 'h-full w-auto object-contain'}
+          className={isLandscape
+            ? 'absolute inset-0 w-full h-full object-cover'
+            : 'absolute inset-0 m-auto max-w-full max-h-full object-contain'
+          }
           style={{
-            filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
+            filter: imageLoaded ? 'none' : 'blur(20px)',
             opacity: imageLoaded ? 0 : 1,
-            position: isLandscape ? undefined : (imageLoaded ? 'absolute' : 'relative'),
             transform: isLandscape ? `translate(${dragOffset.x}px, ${dragOffset.y}px)` : undefined,
             transition: 'filter 0.5s ease-out, opacity 0.5s ease-out',
+            pointerEvents: 'none',
           }}
+          draggable={false}
         />
+        {/* 原图 */}
         <img
           src={wallpaper.imageUrl}
           alt={wallpaper.title}
-          className={isLandscape ? 'absolute inset-0 w-full h-full object-cover object-center' : 'h-full w-auto object-contain'}
+          className={isLandscape
+            ? 'absolute inset-0 w-full h-full object-cover'
+            : 'absolute inset-0 m-auto max-w-full max-h-full object-contain'
+          }
           style={{
             opacity: imageLoaded ? 1 : 0,
-            position: isLandscape ? undefined : (imageLoaded ? 'relative' : 'absolute'),
             transform: isLandscape ? `translate(${dragOffset.x}px, ${dragOffset.y}px)` : undefined,
             transition: 'opacity 0.5s ease-out',
+            pointerEvents: 'none',
           }}
           onLoad={handleImageLoad}
+          draggable={false}
         />
       </div>
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
         <button onClick={handleEnterFullscreen} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white text-sm">
-          <Maximize2 className="w-4 h-4" />全屏
+          <Maximize2 className="w-4 h-4" />
+          全屏
         </button>
         <button onClick={() => setIsDesktopRatio(!isDesktopRatio)} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-white text-sm ${isDesktopRatio ? 'bg-primary' : 'bg-white/10 hover:bg-white/20'}`}>
-          <Monitor className="w-4 h-4" />16:9 比例
+          <Monitor className="w-4 h-4" />
+          16:9 比例
         </button>
       </div>
     </div>
