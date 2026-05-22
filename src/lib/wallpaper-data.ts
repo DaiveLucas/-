@@ -1,6 +1,6 @@
 import type { Wallpaper, CategoryConfig, WallpaperCategory, DatabaseCategory } from '@/types/wallpaper';
 
-// 分类配置（20个新分类）
+// 分类配置（15个分类）
 export const categories: CategoryConfig[] = [
   { id: 'all', label: '全部' },
   { id: 'nature', label: '自然' },
@@ -11,15 +11,10 @@ export const categories: CategoryConfig[] = [
   { id: 'cozy', label: '治愈' },
   { id: 'cottage', label: '小屋' },
   { id: 'galaxy', label: '星河' },
-  { id: 'nebula', label: '星云' },
   { id: 'abstract', label: '抽象' },
-  { id: 'gradient', label: '渐变' },
-  { id: 'cyberpunk', label: '赛博朋克' },
   { id: 'scifi', label: '科幻' },
-  { id: 'minimal', label: '极简' },
   { id: 'anime', label: '动漫' },
   { id: 'city', label: '城市' },
-  { id: 'dark', label: '暗黑' },
   { id: 'flower', label: '花卉' },
   { id: 'animal', label: '动物' },
   { id: 'sky', label: '天空' },
@@ -61,8 +56,8 @@ export const wallpapers: Wallpaper[] = [
     imageUrl: 'https://picsum.photos/id/32/1920/2880',
     thumbnailUrl: 'https://picsum.photos/id/32/200/300',
     mediumUrl: 'https://picsum.photos/id/32/800/1200',
-    category: 'cyberpunk',
-    tags: ['cyberpunk', 'neon'],
+    category: 'city',
+    tags: ['city', 'urban', 'skyline'],
     resolution: { width: 1920, height: 2880 },
     source: 'Picsum',
     views: 15600,
@@ -75,8 +70,8 @@ export const wallpapers: Wallpaper[] = [
     imageUrl: 'https://picsum.photos/id/57/1920/1920',
     thumbnailUrl: 'https://picsum.photos/id/57/200/200',
     mediumUrl: 'https://picsum.photos/id/57/800/800',
-    category: 'minimal',
-    tags: ['minimal', 'simple'],
+    category: 'scifi',
+    tags: ['sci-fi', 'futuristic'],
     resolution: { width: 1920, height: 1920 },
     source: 'Picsum',
     views: 6500,
@@ -145,8 +140,8 @@ export const wallpapers: Wallpaper[] = [
     imageUrl: 'https://picsum.photos/id/27/1920/2240',
     thumbnailUrl: 'https://picsum.photos/id/27/200/233',
     mediumUrl: 'https://picsum.photos/id/27/800/933',
-    category: 'nebula',
-    tags: ['nebula', 'space art'],
+    category: 'galaxy',
+    tags: ['galaxy', 'milky way'],
     resolution: { width: 1920, height: 2240 },
     source: 'Picsum',
     views: 22100,
@@ -187,8 +182,8 @@ export const wallpapers: Wallpaper[] = [
     imageUrl: 'https://picsum.photos/id/28/1920/1760',
     thumbnailUrl: 'https://picsum.photos/id/28/200/183',
     mediumUrl: 'https://picsum.photos/id/28/800/733',
-    category: 'minimal',
-    tags: ['minimal', 'simple'],
+    category: 'scifi',
+    tags: ['sci-fi', 'futuristic'],
     resolution: { width: 1920, height: 1760 },
     source: 'Picsum',
     views: 5200,
@@ -229,8 +224,8 @@ export const wallpapers: Wallpaper[] = [
     imageUrl: 'https://picsum.photos/id/43/1920/2080',
     thumbnailUrl: 'https://picsum.photos/id/43/200/217',
     mediumUrl: 'https://picsum.photos/id/43/800/867',
-    category: 'gradient',
-    tags: ['gradient', 'colorful'],
+    category: 'abstract',
+    tags: ['abstract'],
     resolution: { width: 1920, height: 2080 },
     source: 'Picsum',
     views: 6800,
@@ -350,7 +345,7 @@ const ratioConfigs = [
 ];
 
 // 分类列表（用于随机分配）
-const categoryPool: DatabaseCategory[] = ['nature', 'mountain', 'ocean', 'forest', 'sunset', 'cozy', 'cottage', 'galaxy', 'nebula', 'abstract', 'gradient', 'cyberpunk', 'scifi', 'minimal', 'anime', 'city', 'dark', 'flower', 'animal', 'sky'];
+const categoryPool: DatabaseCategory[] = ['nature', 'mountain', 'ocean', 'forest', 'sunset', 'cozy', 'cottage', 'galaxy', 'abstract', 'scifi', 'anime', 'city', 'flower', 'animal', 'sky'];
 
 // 标签池（按分类，使用Pexels搜索关键词）
 const tagsPool: Record<DatabaseCategory, string[]> = {
@@ -362,15 +357,10 @@ const tagsPool: Record<DatabaseCategory, string[]> = {
   cozy: ['cozy', 'warm', 'hygge'],
   cottage: ['cottage', 'cabin'],
   galaxy: ['galaxy', 'milky way'],
-  nebula: ['nebula', 'space art'],
   abstract: ['abstract'],
-  gradient: ['gradient', 'colorful'],
-  cyberpunk: ['cyberpunk', 'neon'],
   scifi: ['sci-fi', 'futuristic'],
-  minimal: ['minimal', 'simple'],
   anime: ['anime', 'illustration'],
   city: ['city', 'urban', 'skyline'],
-  dark: ['dark', 'moody'],
   flower: ['flower', 'botanical'],
   animal: ['animal', 'wildlife'],
   sky: ['sky', 'clouds'],
