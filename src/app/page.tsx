@@ -148,19 +148,19 @@ const WallpaperCard = memo(function WallpaperCard({
   return (
     <Link
       href={`/wallpaper/${wallpaper.id}`}
-      className="mb-2 break-inside-avoid block"
+      className="mb-3 break-inside-avoid block"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative overflow-hidden bg-muted/30 rounded-lg">
         {/* 骨架/模糊占位 */}
         {!isLoaded && !hasError && (
-          <div className="w-full h-48 bg-muted animate-pulse rounded-lg" />
+          <div className="w-full min-h-[120px] bg-muted animate-pulse" />
         )}
 
         {/* 加载失败占位 */}
         {hasError && (
-          <div className="absolute inset-0 bg-muted/50 flex flex-col items-center justify-center gap-2 min-h-[150px] rounded-lg">
+          <div className="absolute inset-0 bg-muted/50 flex flex-col items-center justify-center gap-2 min-h-[150px]">
             <ImageOff className="w-8 h-8 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">加载失败</span>
           </div>
@@ -174,7 +174,7 @@ const WallpaperCard = memo(function WallpaperCard({
             loading="lazy"
             onLoad={() => setIsLoaded(true)}
             onError={() => setHasError(true)}
-            className={`w-full h-auto object-cover bg-muted/20 transition-all duration-500 rounded-lg ${
+            className={`w-full h-auto bg-muted/20 transition-all duration-500 ${
               isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
             } ${
               isHovered && isLoaded ? 'scale-[1.02]' : 'scale-100'
@@ -184,7 +184,7 @@ const WallpaperCard = memo(function WallpaperCard({
 
         {/* Hover 遮罩 - 黑色半透明 */}
         <div
-          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 rounded-lg ${
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
             isHovered ? 'opacity-100' : 'opacity-0'
           }`}
         >
@@ -230,11 +230,11 @@ function SkeletonGrid() {
   const heights = [180, 220, 260, 300, 340, 280, 200, 240];
   
   return (
-    <div className="columns-1 md:columns-3 gap-2 px-3">
+    <div className="columns-3 gap-3 px-5 max-w-[1800px] mx-auto">
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="mb-2 break-inside-avoid"
+          className="mb-3 break-inside-avoid"
         >
           <div
             className="bg-muted/50 rounded-lg animate-pulse"
@@ -540,7 +540,7 @@ export default function HomePage() {
             
             {/* 瀑布流网格 */}
             {!isSearching && (
-              <div className="columns-3 gap-2 w-full px-5 max-w-[1800px] mx-auto">
+              <div className="columns-3 gap-3 w-full px-5 max-w-[1800px] mx-auto">
                 {filteredWallpapers.map((wallpaper) => (
                   <WallpaperCard
                     key={wallpaper.id}
