@@ -134,16 +134,16 @@ function FullscreenPreview({
         </button>
       )}
 
-      {/* 图片容器 - 限制最大尺寸 */}
+      {/* 图片容器 - 撑满全屏 */}
       <div
-        className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center overflow-hidden"
+        className="relative w-full h-full flex items-center justify-center overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 缩略图（模糊占位） */}
         <img
           src={wallpaper.thumbnailUrl}
           alt={wallpaper.title}
-          className="w-auto h-auto max-w-full max-h-[90vh] object-contain transition-all duration-500"
+          className="w-full h-full object-cover transition-all duration-500"
           style={{
             filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
             opacity: imageLoaded ? 0 : 1,
@@ -153,7 +153,7 @@ function FullscreenPreview({
         <img
           src={wallpaper.imageUrl}
           alt={wallpaper.title}
-          className="w-auto h-auto max-w-full max-h-[90vh] object-contain transition-all duration-500"
+          className="w-full h-full object-cover transition-all duration-500"
           style={{
             opacity: imageLoaded ? 1 : 0,
           }}
