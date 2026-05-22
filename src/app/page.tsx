@@ -254,23 +254,15 @@ export default function HomePage() {
   // 分类切换处理
   const handleCategoryChange = async (category: WallpaperCategory) => {
     setActiveCategory(category);
-    if (category === 'all' || category === 'popular' || category === 'latest') {
+    if (category === 'all') {
       return;
     }
     setIsLoading(true);
     try {
-      const categoryMap: Record<string, string[]> = {
-        nature: ['landscape', 'healing'],
-        anime: ['anime'],
-        abstract: ['abstract'],
-        scifi: ['cyberpunk', 'space'],
-        minimal: ['minimalist'],
-      };
-      const dbCategories = categoryMap[category] || [category];
       const { data, error } = await supabase
         .from('wallpapers')
         .select('*')
-        .in('category', dbCategories)
+        .eq('category', category)
         .limit(50);
       if (error) throw error;
       const formatted = (data || []).map(w => mapWallpaper(w));
@@ -306,14 +298,16 @@ export default function HomePage() {
     
     const fetchInitialData = async () => {
       try {
-        const { data: landscapeData } = await supabase.from('wallpapers').select('*').eq('category', 'landscape').limit(4);
-        const { data: healingData } = await supabase.from('wallpapers').select('*').eq('category', 'healing').limit(4);
-        const { data: spaceData } = await supabase.from('wallpapers').select('*').eq('category', 'space').limit(4);
-        const { data: abstractData } = await supabase.from('wallpapers').select('*').eq('category', 'abstract').limit(4);
-        const { data: cyberpunkData } = await supabase.from('wallpapers').select('*').eq('category', 'cyberpunk').limit(4);
-        const { data: minimalistData } = await supabase.from('wallpapers').select('*').eq('category', 'minimalist').limit(4);
-        const { data: animeData } = await supabase.from('wallpapers').select('*').eq('category', 'anime').limit(4);
-        const allData = [...(landscapeData||[]), ...(healingData||[]), ...(spaceData||[]), ...(abstractData||[]), ...(cyberpunkData||[]), ...(minimalistData||[]), ...(animeData||[])];
+        // 从新分类中获取壁纸
+        const categories = ['nature', 'mountain', 'ocean', 'forest', 'sunset', 'cozy', 'galaxy', 'nebula', 'abstract', 'gradient', 'cyberpunk', 'scifi', 'minimal', 'anime', 'city', 'dark', 'flower', 'animal', 'sky', 'cottage'];
+        const allData = [];
+        
+        // 从每个分类获取少量壁纸
+        for (const cat of categories) {
+          const { data } = await supabase.from('wallpapers').select('*').eq('category', cat).limit(2);
+          if (data) allData.push(...data);
+        }
+        
         const formatted = allData.map(w => mapWallpaper(w));
         
         const unique = Array.from(new Map(formatted.map(w => [w.id, w])).values());
@@ -502,29 +496,9 @@ export default function HomePage() {
     // 如果有搜索结果，使用搜索结果
     let result = searchQuery.trim() ? searchResults : allWallpapers;
 
-    // 再根据分类筛选（热门和最新需要特殊处理）
-    if (activeCategory === 'popular') {
-      // 从 allWallpapers 中按 downloads 降序排序
-      const sorted = [...result].sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
-      result = sorted;
-    } else if (activeCategory === 'latest') {
-      // 从 allWallpapers 中按 createdAt 降序排序
-      const sorted = [...result].sort((a, b) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA;
-      });
-      result = sorted;
-    } else if (activeCategory !== 'all') {
-      const categoryMap: Record<string, string[]> = {
-        nature: ['landscape', 'healing'],
-        anime: ['anime'],
-        abstract: ['abstract'],
-        scifi: ['cyberpunk', 'space'],
-        minimal: ['minimalist'],
-      };
-      const dbCategories = categoryMap[activeCategory] || [activeCategory];
-      result = result.filter(w => dbCategories.includes(w.category));
+    // 再根据分类筛选
+    if (activeCategory !== 'all') {
+      result = result.filter(w => w.category === activeCategory);
     }
 
     return result;
