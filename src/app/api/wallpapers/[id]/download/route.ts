@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(
   request: NextRequest,
@@ -11,7 +11,7 @@ export async function POST(
     // 使用 RPC 或原始 SQL 来原子性地增加 downloads 计数
     // Supabase 不支持直接 update({ downloads: 'downloads + 1' })
     // 所以先获取当前值再加1
-    const { data: current, error: fetchError } = await supabaseAdmin
+    const { data: current, error: fetchError } = await supabase
       .from('wallpapers')
       .select('downloads')
       .eq('id', id)
@@ -25,7 +25,7 @@ export async function POST(
       )
     }
 
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabase
       .from('wallpapers')
       .update({ downloads: (current.downloads || 0) + 1 })
       .eq('id', id)

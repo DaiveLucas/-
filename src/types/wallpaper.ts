@@ -1,6 +1,8 @@
 // 壁纸分类（前端展示分类）
 export type WallpaperCategory =
   | 'all'
+  | 'popular'
+  | 'latest'
   | 'nature'
   | 'mountain'
   | 'ocean'

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit
 
     // 构建查询
-    let query = supabaseAdmin
+    let query = supabase
       .from('wallpapers')
       .select('*', { count: 'exact' })
 
@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
     const hasMore = offset + limit < total
 
     // 转换为前端 Wallpaper 类型格式
-    const formattedWallpapers = (data || []).map(w => {
-      const { width, height, ...rest } = w
+    const formattedWallpapers = (data || []).map((w: Record<string, unknown>) => {
+      const { width, height, ...rest } = w as Record<string, unknown> & { width: number; height: number }
       return { ...rest, resolution: { width, height } }
     })
 

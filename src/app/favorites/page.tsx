@@ -10,7 +10,26 @@ import { downloadImage, downloadMultipleImages } from '@/lib/download';
 import Sidebar from '@/components/Sidebar';
 import { Footer } from '@/components/Footer';
 import { Navbar } from '@/components/Navbar';
+import { supabase } from '@/lib/supabase';
 import type { Wallpaper } from '@/types/wallpaper';
+
+// 数据库字段映射到前端格式
+function mapWallpaper(data: Record<string, unknown>): Wallpaper {
+  return {
+    id: data.id as string,
+    title: data.title as string,
+    imageUrl: data.image_url as string,
+    thumbnailUrl: data.thumbnail_url as string,
+    mediumUrl: data.medium_url as string | undefined,
+    category: data.category as Wallpaper['category'],
+    tags: data.tags as string[] || [],
+    resolution: data.resolution as { width: number; height: number } || { width: 1920, height: 1080 },
+    source: data.source as string,
+    views: data.views as number,
+    downloads: data.downloads as number,
+    createdAt: data.created_at as string,
+  };
+}
 
 export default function FavoritesPage() {
   const { favorites, isLoaded, removeFavorite, favoriteCount } = useFavorites();
@@ -27,13 +46,54 @@ export default function FavoritesPage() {
     setErrorIds(prev => new Set(prev).add(id));
   };
 
-  // 使用 getWallpaperById 查找壁纸（支持动态壁纸缓存）
-  const favoriteWallpapers = useMemo(() => {
-    return Object.keys(favorites)
-      .filter(id => favorites[id])
-      .map(id => getWallpaperById(id))
-      .filter((w): w is Wallpaper => w !== undefined);
-  }, [favorites]);
+  // 从 Supabase 查询壁纸详情，查不到再用静态数据降级
+  const [favoriteWallpapers, setFavoriteWallpapers] = useState<Wallpaper[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      const ids = Object.keys(favorites).filter(id => favorites[id]);
+      if (ids.length === 0) {
+        setFavoriteWallpapers([]);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('wallpapers')
+          .select('*')
+          .in('id', ids);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          const wallpapers = data.map(w => mapWallpaper(w));
+          // 按收藏顺序排列
+          setFavoriteWallpapers(wallpapers);
+        } else {
+          // 降级到静态数据
+          const fallback = ids
+            .map(id => getWallpaperById(id))
+            .filter((w): w is Wallpaper => w !== undefined);
+          setFavoriteWallpapers(fallback);
+        }
+      } catch (error) {
+        console.error('Failed to fetch favorites:', error);
+        // 降级到静态数据
+        const fallback = ids
+          .map(id => getWallpaperById(id))
+          .filter((w): w is Wallpaper => w !== undefined);
+        setFavoriteWallpapers(fallback);
+      }
+      
+      setIsLoading(false);
+    };
+
+    if (isLoaded) {
+      fetchFavorites();
+    }
+  }, [favorites, isLoaded]);
 
   const handleDownload = async (imageUrl: string, title: string) => {
     await downloadImage(imageUrl, `${title}.jpg`);
@@ -128,9 +188,10 @@ export default function FavoritesPage() {
                         <>
                           {/* 使用 img 标签让图片按原始比例自然撑开，实现真正的瀑布流 */}
                           <img
-                            src={wallpaper.thumbnailUrl}
+                            src={wallpaper.mediumUrl || wallpaper.thumbnailUrl}
                             alt={wallpaper.title}
-                            className="w-full h-auto object-cover"
+                            className="w-full h-auto rounded-lg"
+                            style={{ aspectRatio: `${wallpaper.resolution.width}/${wallpaper.resolution.height}` }}
                             onError={() => handleImageError(wallpaper.id)}
                           />
                           {/* 右上角收藏标记 */}

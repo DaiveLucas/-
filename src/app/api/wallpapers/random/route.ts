@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 export async function GET() {
   try {
     // 先获取总数
-    const { count, error: countError } = await supabaseAdmin
+    const { count, error: countError } = await supabase
       .from('wallpapers')
       .select('*', { count: 'exact', head: true })
 
@@ -20,7 +20,7 @@ export async function GET() {
     const randomOffset = Math.floor(Math.random() * count)
 
     // 获取随机一条
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('wallpapers')
       .select('*')
       .range(randomOffset, randomOffset)

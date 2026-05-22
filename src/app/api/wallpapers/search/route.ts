@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     // 搜索标题或标签
     // .or() 组合条件：标题模糊匹配 OR 标签数组包含关键词
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('wallpapers')
       .select('*')
       .or(`title.ilike.%${safeKeyword}%,tags.cs.{${safeKeyword}}`)
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 转换为前端 Wallpaper 类型格式
-    const formattedWallpapers = (data || []).map(w => {
+    const formattedWallpapers = (data || []).map((w: { width: number; height: number; [key: string]: unknown }) => {
       const { width, height, ...rest } = w
       return { ...rest, resolution: { width, height } }
     })

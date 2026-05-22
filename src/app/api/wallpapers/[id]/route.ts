@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // GET /api/wallpapers/[id] - 获取单张壁纸详情
 export async function GET(
@@ -17,7 +17,7 @@ export async function GET(
 
   try {
     // 查询壁纸详情
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('wallpapers')
       .select('*')
       .eq('id', id)
@@ -31,7 +31,7 @@ export async function GET(
     }
 
     // 更新浏览量 views + 1
-    await supabaseAdmin
+    await supabase
       .from('wallpapers')
       .update({ views: (data.views || 0) + 1 })
       .eq('id', id);
