@@ -59,14 +59,11 @@ function FullscreenPreview({
   const [isDesktopRatio, setIsDesktopRatio] = useState(defaultDesktopRatio);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageOrientation, setImageOrientation] = useState<'landscape' | 'portrait'>('landscape');
-  
-  // 拖动相关 state
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const lastOffsetRef = useRef({ x: 0, y: 0 });
 
-  // 重置加载状态当壁纸改变时
   useEffect(() => {
     setImageLoaded(false);
     setDragOffset({ x: 0, y: 0 });
@@ -84,7 +81,6 @@ function FullscreenPreview({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, onNext, onPrev, hasNext, hasPrev]);
 
-  // 全屏时隐藏滚动条
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -99,135 +95,93 @@ function FullscreenPreview({
   const handleEnterFullscreen = async () => {
     try {
       await document.documentElement.requestFullscreen();
-    } catch {
-      // 浏览器不支持全屏
-    }
+    } catch {}
   };
 
-  // 拖动事件处理函数
   const handleMouseDown = (e: React.MouseEvent) => {
     if (imageOrientation !== 'landscape') return;
-    dragStartRef.current = { x: e.clientX - lastOffsetRef.current.x, y: e.clientY - lastOffsetRef.current.y };
     setIsDragging(true);
+    dragStartRef.current = { x: e.clientX - lastOffsetRef.current.x, y: e.clientY - lastOffsetRef.current.y };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    setDragOffset({ x: e.clientX - dragStartRef.current.x, y: e.clientY - dragStartRef.current.y });
+    const newOffset = { x: e.clientX - dragStartRef.current.x, y: e.clientY - dragStartRef.current.y };
+    setDragOffset(newOffset);
+    lastOffsetRef.current = newOffset;
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
-    lastOffsetRef.current = { x: dragOffset.x, y: dragOffset.y };
+  };
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth >= img.naturalHeight) {
+      setImageOrientation('landscape');
+    } else {
+      setImageOrientation('portrait');
+    }
+    setImageLoaded(true);
   };
 
   if (!isOpen) return null;
 
+  const isLandscape = imageOrientation === 'landscape';
+
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center overflow-hidden"
-      onClick={onClose}
-    >
-      {/* 关闭按钮 */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
-      >
+    <div className="fixed inset-0 z-50 bg-black/95 overflow-hidden" onClick={onClose}>
+      <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10">
         <X className="w-6 h-6 text-white" />
       </button>
-
-      {/* 左右切换按钮 */}
       {hasPrev && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onPrev();
-          }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-        >
+        <button onClick={(e) => { e.stopPropagation(); onPrev(); }} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10">
           <ChevronLeft className="w-8 h-8 text-white" />
         </button>
       )}
       {hasNext && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onNext();
-          }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-        >
+        <button onClick={(e) => { e.stopPropagation(); onNext(); }} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10">
           <ChevronRight className="w-8 h-8 text-white" />
         </button>
       )}
-
-      {/* 图片容器 */}
       <div
-        className="relative w-full h-full overflow-hidden flex items-center justify-center"
-        style={{ cursor: isDragging ? 'grabbing' : (imageOrientation === 'landscape' ? 'grab' : 'default') }}
+        className="w-full h-full flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        style={{ cursor: isLandscape ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
       >
-        {/* 缩略图（模糊占位） */}
         <img
           src={wallpaper.thumbnailUrl}
           alt={wallpaper.title}
-          className={`transition-all duration-500 ${
-            imageOrientation === 'landscape'
-              ? 'absolute inset-0 w-full h-full object-cover object-center'
-              : 'h-full w-auto object-contain'
-          }`}
+          className={isLandscape ? 'absolute inset-0 w-full h-full object-cover object-center' : 'h-full w-auto object-contain'}
           style={{
             filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
             opacity: imageLoaded ? 0 : 1,
-            transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
+            transform: isLandscape ? `translate(${dragOffset.x}px, ${dragOffset.y}px)` : undefined,
+            transition: 'filter 0.5s ease-out, opacity 0.5s ease-out',
           }}
         />
-        {/* 原图 */}
         <img
           src={wallpaper.imageUrl}
           alt={wallpaper.title}
-          className={`transition-all duration-500 ${
-            imageOrientation === 'landscape'
-              ? 'absolute inset-0 w-full h-full object-cover object-center'
-              : 'h-full w-auto object-contain'
-          }`}
+          className={isLandscape ? 'absolute inset-0 w-full h-full object-cover object-center' : 'h-full w-auto object-contain'}
           style={{
             opacity: imageLoaded ? 1 : 0,
-            transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
+            transform: isLandscape ? `translate(${dragOffset.x}px, ${dragOffset.y}px)` : undefined,
+            transition: 'opacity 0.5s ease-out',
           }}
-          onLoad={(e) => {
-            const img = e.currentTarget;
-            const width = img.naturalWidth;
-            const height = img.naturalHeight;
-            setImageOrientation(width > height ? 'landscape' : 'portrait');
-            setImageLoaded(true);
-          }}
+          onLoad={handleImageLoad}
         />
       </div>
-
-      {/* 底部工具栏 */}
-      <div
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={handleEnterFullscreen}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white text-sm"
-        >
-          <Maximize2 className="w-4 h-4" />
-          全屏
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+        <button onClick={handleEnterFullscreen} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white text-sm">
+          <Maximize2 className="w-4 h-4" />全屏
         </button>
-        <button
-          onClick={() => setIsDesktopRatio(!isDesktopRatio)}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-white text-sm ${
-            isDesktopRatio ? 'bg-primary' : 'bg-white/10 hover:bg-white/20'
-          }`}
-        >
-          <Monitor className="w-4 h-4" />
-          16:9 比例
+        <button onClick={() => setIsDesktopRatio(!isDesktopRatio)} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-white text-sm ${isDesktopRatio ? 'bg-primary' : 'bg-white/10 hover:bg-white/20'}`}>
+          <Monitor className="w-4 h-4" />16:9 比例
         </button>
       </div>
     </div>
