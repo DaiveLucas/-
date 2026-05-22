@@ -122,34 +122,30 @@ function FullscreenPreview({
         </button>
       )}
 
-      {/* 图片容器 - 渐进式加载 */}
+      {/* 图片容器 - 铺满全屏 */}
       <div
-        className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center"
+        className="relative w-full h-full flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 缩略图（模糊占位） */}
         <img
           src={wallpaper.thumbnailUrl}
           alt={wallpaper.title}
-          className={`max-w-full max-h-[90vh] object-contain transition-all duration-500 ${
-            isDesktopRatio ? 'aspect-video' : ''
-          }`}
+          className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
           style={{
             filter: imageLoaded ? 'blur(0px)' : 'blur(20px)',
             opacity: imageLoaded ? 0 : 1,
-            position: imageLoaded ? 'absolute' : 'relative',
+            objectPosition: 'center',
           }}
         />
         {/* 原图 */}
         <img
           src={wallpaper.imageUrl}
           alt={wallpaper.title}
-          className={`max-w-full max-h-[90vh] object-contain transition-all duration-500 ${
-            isDesktopRatio ? 'aspect-video' : ''
-          }`}
+          className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
           style={{
             opacity: imageLoaded ? 1 : 0,
-            position: imageLoaded ? 'relative' : 'absolute',
+            objectPosition: 'center',
           }}
           onLoad={() => setImageLoaded(true)}
         />
