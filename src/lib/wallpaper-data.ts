@@ -1,5 +1,29 @@
 import type { Wallpaper, CategoryConfig, WallpaperCategory, DatabaseCategory } from '@/types/wallpaper';
 
+// 导出 mapWallpaper 函数供其他模块使用
+export function mapWallpaper(w: Record<string, unknown>): Wallpaper {
+  const { width, height, image_url, thumbnail_url, medium_url, source_id, created_at, ...rest } = w;
+  return {
+    ...rest,
+    imageUrl: image_url as string,
+    thumbnailUrl: thumbnail_url as string,
+    mediumUrl: medium_url as string | undefined,
+    sourceId: source_id as string | undefined,
+    createdAt: created_at as string,
+    resolution: { width: width as number, height: height as number },
+  } as unknown as Wallpaper;
+}
+
+// 导出 shuffleArray 函数供其他模块使用
+export function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 // 分类配置（15个分类）
 export const categories: CategoryConfig[] = [
   { id: 'all', label: '全部' },
