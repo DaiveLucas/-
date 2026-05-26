@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowLeft, Heart, Download, Share2, Search, Sparkles, Maximize2, Monitor, ChevronLeft, ChevronRight, X, ChevronDown, ImageOff } from 'lucide-react';
+import { ArrowLeft, Heart, Download, Share2, Sparkles, Maximize2, Monitor, ChevronLeft, ChevronRight, X, ChevronDown, ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -12,24 +11,11 @@ import {
   getSimilarWallpapers,
   formatResolution,
   formatNumber,
+  mapWallpaper,
 } from '@/lib/wallpaper-data';
 import { wallpapers as staticWallpapers } from '@/lib/wallpaper-data';
 import type { Wallpaper } from '@/types/wallpaper';
 import { supabase } from '@/lib/supabase';
-
-// 数据格式转换函数
-function mapWallpaper(w: Record<string, unknown>): Wallpaper {
-  const { width, height, image_url, thumbnail_url, medium_url, source_id, created_at, ...rest } = w;
-  return {
-    ...rest,
-    imageUrl: image_url as string,
-    thumbnailUrl: thumbnail_url as string,
-    mediumUrl: medium_url as string | undefined,
-    sourceId: source_id as string | undefined,
-    createdAt: created_at as string,
-    resolution: { width: width as number, height: height as number },
-  } as unknown as Wallpaper;
-}
 import { useFavorites } from '@/hooks/use-favorites';
 import { downloadImage } from '@/lib/download';
 import Sidebar from '@/components/Sidebar';
